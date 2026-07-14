@@ -1,44 +1,50 @@
--- [[ ЧАСТЬ 1: Сервисы, Настройки и Создание Меню ]]
+-- [[ DELTA MM2 PREMIUM ULTIMATE V3.0 ]]
+-- [[ Авторы проекта: Makanbaev Aidar & Zoya ]]
 
--- [[ Сервисы Roblox ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local VirtualUser = game:GetService("VirtualUser")
+local SoundService = game:GetService("SoundService")
 local LocalPlayer = Players.LocalPlayer
 
--- [[ Определение устройства (ПК или Мобильный) ]]
-local IsMobile = false
-if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
-    IsMobile = true
-end
+-- [[ Глобальная таблица состояний ]]
+_G.DeltaConfig = {
+    ESP = false,
+    AutoAim = false,
+    AutoFarm = false,
+    Fullbright = false,
+    CozyMode = false,
+    GunIndicator = false,
+    
+    AntiAFK = false,
+    RoundInfo = false,
+    AliveCount = false,
+    SheriffSound = false,
+    GunSound = false,
+    
+    KillAll = false,
+    AntiFling = false,
+    Fling = false,
+    FlingTarget = "",
+    
+    PixelBoost = false,
+    TextureBoost = false,
+    PhysicsBoost = false,
+    
+    WalkSpeed = 16,
+    MenuColor = Color3.fromRGB(255, 0, 100),
+    ButtonSize = 50,
+    ButtonTransparency = 0.2
+}
 
--- [[ Состояния функций ]]
-local MM2_ESP_Enabled = false
-local Fullbright_Enabled = false
-local AutoAim_Enabled = false
-local InfiniteJump_Enabled = false
-local AutoFarm_Enabled = false
-local CustomSpeed = 16
-
--- Состояния визуала
-local CozyMode_Enabled = false
-local Particles_Enabled = false
-local CustomSkyID = nil
-
--- Состояния FPS бустов
-local PixelBoost_Enabled = false
-local TextureBoost_Enabled = false
-local PhysicsBoost_Enabled = false
-
--- [[ Таблицы хранения для бэкапа ]]
+-- [[ Бэкапы окружения ]]
+local OriginalMaterials = {}
 local EspObjects = {}
 local Connections = {}
 local GunHighlight = nil
-local OriginalMaterials = {}
-local OriginalSkybox = {}
 local OriginalLighting = {
     Ambient = Lighting.Ambient,
     OutdoorAmbient = Lighting.OutdoorAmbient,
@@ -49,24 +55,10 @@ local OriginalLighting = {
     QualityLevel = settings().Rendering.QualityLevel
 }
 
--- Сохраняем дефолтный Скайбокс при запуске
-local defaultSky = Lighting:FindFirstChildOfClass("Sky")
-if defaultSky then
-    OriginalSkybox = {
-        Bk = defaultSky.SkyboxBk,
-        Dn = defaultSky.SkyboxDn,
-        Ft = defaultSky.SkyboxFt,
-        Lf = defaultSky.SkyboxLf,
-        Rt = defaultSky.SkyboxRt,
-        Up = defaultSky.SkyboxUp
-    }
-end
-
--- Переменные для MM2 ролей
+-- Инициализация ролей
 local Murderer = nil
 local Sheriff = nil
 
--- [[ Определение Ролей ]]
 local function GetMM2Roles()
     Murderer = nil
     Sheriff = nil
@@ -80,629 +72,374 @@ local function GetMM2Roles()
     end
 end
 
--- [[ Создание Меню GUI ]]
+-- [[ Определение устройства ]]
+local IsMobile = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+
+-- [[ Создание GUI ]]
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DeltaMM2PremiumUltimate"
+ScreenGui.Name = "DeltaMM2PremiumV3"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 280, 0, 380)
-MainFrame.Position = UDim2.new(0.5, -140, 0.4, -190)
+MainFrame.Size = UDim2.new(0, 310, 0, 410)
+MainFrame.Position = UDim2.new(0.5, -155, 0.4, -205)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
-local MainUICorner = Instance.new("UICorner")
-MainUICorner.CornerRadius = UDim.new(0, 12)
-MainUICorner.Parent = MainFrame
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainFrame
 
--- Шапка
+-- Хэдер (Шапка)
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 35)
+Header.BackgroundTransparency = 1
+Header.Parent = MainFrame
+
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 35)
+Title.Size = UDim2.new(1, -40, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "DELTA MM2 ULTIMATE (" .. (IsMobile and "MOBILE" or "PC") .. ")"
+Title.Text = "DELTA MM2 ULTIMATE V3.0"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 14
-Title.Parent = MainFrame
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
 
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+CloseBtn.Position = UDim2.new(1, -35, 0, 2)
 CloseBtn.BackgroundTransparency = 1
-CloseBtn.Text = "—"
-CloseBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+CloseBtn.Text = "×"
+CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 CloseBtn.Font = Enum.Font.SourceSansBold
-CloseBtn.TextSize = 18
-CloseBtn.Parent = MainFrame
+CloseBtn.TextSize = 22
+CloseBtn.Parent = Header
 
--- Навигация по вкладкам (3 вкладки)
-local TabContainer = Instance.new("Frame")
-TabContainer.Size = UDim2.new(1, 0, 0, 30)
-TabContainer.Position = UDim2.new(0, 0, 0, 35)
-TabContainer.BackgroundTransparency = 1
-TabContainer.Parent = MainFrame
+-- Контейнер для вкладок
+local TabBar = Instance.new("ScrollingFrame")
+TabBar.Size = UDim2.new(1, 0, 0, 30)
+TabBar.Position = UDim2.new(0, 0, 0, 35)
+TabBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+TabBar.BorderSizePixel = 0
+TabBar.CanvasSize = UDim2.new(1.4, 0, 0, 0)
+TabBar.ScrollBarThickness = 2
+TabBar.Parent = MainFrame
 
-local MainTabBtn = Instance.new("TextButton")
-MainTabBtn.Size = UDim2.new(0.33, 0, 1, 0)
-MainTabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainTabBtn.Text = "Функции"
-MainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MainTabBtn.Font = Enum.Font.SourceSansBold
-MainTabBtn.TextSize = 12
-MainTabBtn.Parent = TabContainer
+local TabBarLayout = Instance.new("UIListLayout")
+TabBarLayout.FillDirection = Enum.FillDirection.Horizontal
+TabBarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabBarLayout.Parent = TabBar
 
-local VisualTabBtn = Instance.new("TextButton")
-VisualTabBtn.Size = UDim2.new(0.33, 0, 1, 0)
-VisualTabBtn.Position = UDim2.new(0.33, 0, 0, 0)
-VisualTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-VisualTabBtn.Text = "Визуал"
-VisualTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-VisualTabBtn.Font = Enum.Font.SourceSansBold
-VisualTabBtn.TextSize = 12
-VisualTabBtn.Parent = TabContainer
+local ContainerFrame = Instance.new("Frame")
+ContainerFrame.Size = UDim2.new(1, 0, 1, -65)
+ContainerFrame.Position = UDim2.new(0, 0, 0, 65)
+ContainerFrame.BackgroundTransparency = 1
+ContainerFrame.Parent = MainFrame
 
-local FpsTabBtn = Instance.new("TextButton")
-FpsTabBtn.Size = UDim2.new(0.34, 0, 1, 0)
-FpsTabBtn.Position = UDim2.new(0.66, 0, 0, 0)
-FpsTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-FpsTabBtn.Text = "FPS Буст"
-FpsTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-FpsTabBtn.Font = Enum.Font.SourceSansBold
-FpsTabBtn.TextSize = 12
-FpsTabBtn.Parent = TabContainer
+-- Массив хранения страниц
+local Tabs = {}
 
--- Контейнеры (Скролл-списки)
-local Container = Instance.new("ScrollingFrame")
-Container.Size = UDim2.new(1, -20, 1, -85)
-Container.Position = UDim2.new(0, 10, 0, 75)
-Container.BackgroundTransparency = 1
-Container.CanvasSize = UDim2.new(0, 0, 0, 450)
-Container.ScrollBarThickness = 2
-Container.Parent = MainFrame
+local function CreateTab(name, order)
+    local TabBtn = Instance.new("TextButton")
+    TabBtn.Size = UDim2.new(0, 80, 1, 0)
+    TabBtn.BackgroundTransparency = 1
+    TabBtn.Text = name
+    TabBtn.TextColor3 = (order == 1) and _G.DeltaConfig.MenuColor or Color3.fromRGB(150, 150, 150)
+    TabBtn.Font = Enum.Font.SourceSansBold
+    TabBtn.TextSize = 12
+    TabBtn.LayoutOrder = order
+    TabBtn.Parent = TabBar
 
-local VisualContainer = Instance.new("ScrollingFrame")
-VisualContainer.Size = UDim2.new(1, -20, 1, -85)
-VisualContainer.Position = UDim2.new(0, 10, 0, 75)
-VisualContainer.BackgroundTransparency = 1
-VisualContainer.CanvasSize = UDim2.new(0, 0, 0, 350)
-VisualContainer.ScrollBarThickness = 2
-VisualContainer.Visible = false
-VisualContainer.Parent = MainFrame
+    local Page = Instance.new("ScrollingFrame")
+    Page.Size = UDim2.new(1, -20, 1, -10)
+    Page.Position = UDim2.new(0, 10, 0, 5)
+    Page.BackgroundTransparency = 1
+    Page.CanvasSize = UDim2.new(0, 0, 0, 450)
+    Page.ScrollBarThickness = 2
+    Page.Visible = (order == 1)
+    Page.Parent = ContainerFrame
 
-local FpsContainer = Instance.new("ScrollingFrame")
-FpsContainer.Size = UDim2.new(1, -20, 1, -85)
-FpsContainer.Position = UDim2.new(0, 10, 0, 75)
-FpsContainer.BackgroundTransparency = 1
-FpsContainer.CanvasSize = UDim2.new(0, 0, 0, 300)
-FpsContainer.ScrollBarThickness = 2
-FpsContainer.Visible = false
-FpsContainer.Parent = MainFrame
+    local PageLayout = Instance.new("UIListLayout")
+    PageLayout.Padding = UDim.new(0, 8)
+    PageLayout.Parent = Page
 
--- Сетки макетов (Layouts)
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Padding = UDim.new(0, 8)
-UIListLayout.Parent = Container
-
-local VisualUIList = Instance.new("UIListLayout")
-VisualUIList.Padding = UDim.new(0, 8)
-VisualUIList.Parent = VisualContainer
-
-local FpsUIList = Instance.new("UIListLayout")
-FpsUIList.Padding = UDim.new(0, 8)
-FpsUIList.Parent = FpsContainer
-
--- Логика переключения Вкладок
-MainTabBtn.MouseButton1Click:Connect(function()
-    Container.Visible = true; VisualContainer.Visible = false; FpsContainer.Visible = false
-    MainTabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); MainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    VisualTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); VisualTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    FpsTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); FpsTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-end)
-
-VisualTabBtn.MouseButton1Click:Connect(function()
-    Container.Visible = false; VisualContainer.Visible = true; FpsContainer.Visible = false
-    VisualTabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); VisualTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MainTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); MainTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    FpsTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); FpsTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-end)
-
-FpsTabBtn.MouseButton1Click:Connect(function()
-    Container.Visible = false; VisualContainer.Visible = false; FpsContainer.Visible = true
-    FpsTabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); FpsTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MainTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); MainTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    VisualTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); VisualTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-end)
-
--- Кнопка открытия «D»
-local OpenBtn = Instance.new("TextButton")
-OpenBtn.Size = UDim2.new(0, 50, 0, 50)
-OpenBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
-OpenBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-OpenBtn.Text = "D"
-OpenBtn.TextColor3 = Color3.fromRGB(255, 0, 100)
-OpenBtn.Font = Enum.Font.SourceSansBold
-OpenBtn.TextSize = 22
-OpenBtn.Visible = false
-OpenBtn.Active = true
-OpenBtn.Draggable = true
-OpenBtn.Parent = ScreenGui
-Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
-
-CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false; OpenBtn.Visible = true end)
-OpenBtn.MouseButton1Click:Connect(function() MainFrame.Visible = true; OpenBtn.Visible = false end)
-
--- Открытие на ПК через RightShift
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and not IsMobile then
-        if input.KeyCode == Enum.KeyCode.RightShift then
-            MainFrame.Visible = not MainFrame.Visible
-            OpenBtn.Visible = not MainFrame.Visible
+    TabBtn.MouseButton1Click:Connect(function()
+        for _, t in pairs(Tabs) do
+            t.Page.Visible = false
+            t.Btn.TextColor3 = Color3.fromRGB(150, 150, 150)
         end
-    end
-end)
-
--- Хелперы кнопок
-local function CreateToggle(parent, name, default, callback)
-    local state = default
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1, 0, 0, 35)
-    Button.BackgroundColor3 = state and Color3.fromRGB(100, 20, 40) or Color3.fromRGB(30, 30, 30)
-    Button.Text = name .. (state and " : ON" or " : OFF")
-    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Button.Font = Enum.Font.SourceSansSemibold
-    Button.TextSize = 13
-    Button.Parent = parent
-    Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
-    
-    Button.MouseButton1Click:Connect(function()
-        state = not state
-        Button.BackgroundColor3 = state and Color3.fromRGB(150, 30, 60) or Color3.fromRGB(30, 30, 30)
-        Button.Text = name .. (state and " : ON" or " : OFF")
-        callback(state)
+        Page.Visible = true
+        TabBtn.TextColor3 = _G.DeltaConfig.MenuColor
     end)
+
+    Tabs[name] = {Page = Page, Btn = TabBtn}
+    return Page
 end
 
-local function CreateButton(parent, name, callback)
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1, 0, 0, 35)
-    Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Button.Text = name
-    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Button.Font = Enum.Font.SourceSansSemibold
-    Button.TextSize = 13
-    Button.Parent = parent
-    Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
-    Button.MouseButton1Click:Connect(callback)
-end
+-- Создаем 6 вкладок
+local PageFunctions = CreateTab("Функции", 1)
+local PageUtils = CreateTab("Утилиты", 2)
+local PageExploits = CreateTab("Эксплойт", 3)
+local PageFps = CreateTab("FPS Буст", 4)
+local PageSettings = CreateTab("Настройки", 5)
+local PageCredits = CreateTab("Кредиты", 6)
+-- [[ ЧАСТЬ 2: Компоненты UI и Логика "Функций" ]]
 
-local function CreateSlider(name, min, max, default, callback)
-    local SliderFrame = Instance.new("Frame")
-    SliderFrame.Size = UDim2.new(1, 0, 0, 45)
-    SliderFrame.BackgroundTransparency = 1
-    SliderFrame.Parent = Container
+-- Утилиты для создания элементов управления
+local function CreateToggle(parent, text, configKey, callback)
+    local ToggleFrame = Instance.new("Frame")
+    ToggleFrame.Size = UDim2.new(1, 0, 0, 35)
+    ToggleFrame.BackgroundTransparency = 1
+    ToggleFrame.Parent = parent
 
     local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, 0, 0, 20)
+    Label.Size = UDim2.new(0.7, 0, 1, 0)
     Label.BackgroundTransparency = 1
-    Label.Text = name .. ": " .. tostring(default)
-    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.Text = text
+    Label.TextColor3 = Color3.fromRGB(200, 200, 200)
     Label.Font = Enum.Font.SourceSans
-    Label.TextSize = 12
-    Label.Parent = SliderFrame
+    Label.TextSize = 14
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = ToggleFrame
 
-    local BtnMinus = Instance.new("TextButton")
-    BtnMinus.Size = UDim2.new(0, 35, 0, 20)
-    BtnMinus.Position = UDim2.new(0, 5, 0, 20)
-    BtnMinus.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    BtnMinus.Text = "-"
-    BtnMinus.TextColor3 = Color3.fromRGB(255, 255, 255)
-    BtnMinus.Parent = SliderFrame
-    Instance.new("UICorner", BtnMinus).CornerRadius = UDim.new(0, 4)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(0, 50, 0, 22)
+    Button.Position = UDim2.new(1, -55, 0.5, -11)
+    Button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Button.Text = ""
+    Button.Parent = ToggleFrame
 
-    local BtnPlus = Instance.new("TextButton")
-    BtnPlus.Size = UDim2.new(0, 35, 0, 20)
-    BtnPlus.Position = UDim2.new(1, -40, 0, 20)
-    BtnPlus.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    BtnPlus.Text = "+"
-    BtnPlus.TextColor3 = Color3.fromRGB(255, 255, 255)
-    BtnPlus.Parent = SliderFrame
-    Instance.new("UICorner", BtnPlus).CornerRadius = UDim.new(0, 4)
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(0, 11)
+    ButtonCorner.Parent = Button
 
-    local current = default
-    BtnMinus.MouseButton1Click:Connect(function()
-        current = math.max(min, current - 5)
-        Label.Text = name .. ": " .. tostring(current)
-        callback(current)
+    local Indicator = Instance.new("Frame")
+    Indicator.Size = UDim2.new(0, 16, 0, 16)
+    Indicator.Position = UDim2.new(0, 3, 0.5, -8)
+    Indicator.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+    Indicator.Parent = Button
+
+    local IndicatorCorner = Instance.new("UICorner")
+    IndicatorCorner.CornerRadius = UDim.new(0, 8)
+    IndicatorCorner.Parent = Indicator
+
+    local function updateVisuals(state)
+        if state then
+            Button:TweenBackgroundColor3(_G.DeltaConfig.MenuColor, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.2, true)
+            Indicator:TweenPosition(UDim2.new(1, -19, 0.5, -8), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.2, true)
+            Indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            Button:TweenBackgroundColor3(Color3.fromRGB(35, 35, 35), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.2, true)
+            Indicator:TweenPosition(UDim2.new(0, 3, 0.5, -8), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.2, true)
+            Indicator.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+        end
+    end
+
+    Button.MouseButton1Click:Connect(function()
+        _G.DeltaConfig[configKey] = not _G.DeltaConfig[configKey]
+        updateVisuals(_G.DeltaConfig[configKey])
+        if callback then callback(_G.DeltaConfig[configKey]) end
     end)
-    BtnPlus.MouseButton1Click:Connect(function()
-        current = math.min(max, current + 5)
-        Label.Text = name .. ": " .. tostring(current)
-        callback(current)
+    
+    updateVisuals(_G.DeltaConfig[configKey])
+end
+
+-- Система уведомлений на экране
+local function CreateNotify(title, text, color)
+    local NotifyFrame = Instance.new("Frame")
+    NotifyFrame.Size = UDim2.new(0, 220, 0, 60)
+    NotifyFrame.Position = UDim2.new(1, 10, 0.8, -70)
+    NotifyFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    NotifyFrame.BorderSizePixel = 0
+    NotifyFrame.Parent = ScreenGui
+
+    local NotifyCorner = Instance.new("UICorner")
+    NotifyCorner.CornerRadius = UDim.new(0, 8)
+    NotifyCorner.Parent = NotifyFrame
+
+    local SideBar = Instance.new("Frame")
+    SideBar.Size = UDim2.new(0, 4, 1, 0)
+    SideBar.BackgroundColor3 = color or _G.DeltaConfig.MenuColor
+    SideBar.BorderSizePixel = 0
+    SideBar.Parent = NotifyFrame
+    Instance.new("UICorner", SideBar).CornerRadius = UDim.new(0, 4)
+
+    local NTitle = Instance.new("TextLabel")
+    NTitle.Size = UDim2.new(1, -15, 0, 20)
+    NTitle.Position = UDim2.new(0, 10, 0, 5)
+    NTitle.BackgroundTransparency = 1
+    NTitle.Text = title
+    NTitle.TextColor3 = color or Color3.fromRGB(255, 255, 255)
+    NTitle.Font = Enum.Font.SourceSansBold
+    NTitle.TextSize = 12
+    NTitle.TextXAlignment = Enum.TextXAlignment.Left
+    NTitle.Parent = NotifyFrame
+
+    local NText = Instance.new("TextLabel")
+    NText.Size = UDim2.new(1, -15, 0, 30)
+    NText.Position = UDim2.new(0, 10, 0, 25)
+    NText.BackgroundTransparency = 1
+    NText.Text = text
+    NText.TextColor3 = Color3.fromRGB(200, 200, 200)
+    NText.Font = Enum.Font.SourceSans
+    NText.TextSize = 11
+    NText.TextWrapped = true
+    NText.TextXAlignment = Enum.TextXAlignment.Left
+    NText.Parent = NotifyFrame
+
+    NotifyFrame:TweenPosition(UDim2.new(1, -230, 0.8, -70), "Out", "Quart", 0.3, true)
+    task.delay(3, function()
+        NotifyFrame:TweenPosition(UDim2.new(1, 10, 0.8, -70), "In", "Quart", 0.3, true, function()
+            NotifyFrame:Destroy()
+        end)
     end)
 end
--- [[ ЧАСТЬ 2: Автофарм, Аим, Шейдеры, Небо, Партиклы и Оптимизация ]]
 
--- Логика Автофарма Монет
-task.spawn(function()
-    while true do
-        task.wait(0.2)
-        if AutoFarm_Enabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local coinData = LocalPlayer:FindFirstChild("leaderstats") and LocalPlayer.leaderstats:FindFirstChild("Coins")
-            if coinData and coinData.Value >= 40 then
-                local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if humanoid then
-                    humanoid.Health = 0
-                    task.wait(4)
+-- [[ ЛОГИКА ВКЛАДКИ: ФУНКЦИИ ]]
+
+-- 1. MM2 ESP (Никнеймы, Коробки и Подсветка ролей)
+local function UpdateESP()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local char = p.Character
+            local highlight = char:FindFirstChild("Delta_Highlight")
+            
+            if _G.DeltaConfig.ESP then
+                if not highlight then
+                    highlight = Instance.new("Highlight")
+                    highlight.Name = "Delta_Highlight"
+                    highlight.FillTransparency = 0.5
+                    highlight.OutlineTransparency = 0.2
+                    highlight.Parent = char
+                end
+                
+                -- Распознавание ролей по инвентарю
+                local isMerd = p.Backpack:FindFirstChild("Knife") or char:FindFirstChild("Knife")
+                local isSher = p.Backpack:FindFirstChild("Gun") or char:FindFirstChild("Gun")
+                
+                if isMerd then
+                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                    highlight.OutlineColor = Color3.fromRGB(255, 100, 100)
+                elseif isSher then
+                    highlight.FillColor = Color3.fromRGB(0, 100, 255)
+                    highlight.OutlineColor = Color3.fromRGB(100, 200, 255)
+                else
+                    highlight.FillColor = Color3.fromRGB(0, 255, 100)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
                 end
             else
-                local root = LocalPlayer.Character.HumanoidRootPart
-                local closestCoin = nil
-                local shortestDistance = math.huge
+                if highlight then highlight:Destroy() end
+            end
+        end
+    end
+end
 
-                for _, obj in ipairs(Workspace:GetDescendants()) do
-                    if obj.Name == "Coin_Sub" or obj.Name == "Coin" or (obj:IsA("BasePart") and obj.Parent.Name == "CoinContainer") then
-                        local dist = (obj.Position - root.Position).Magnitude
-                        if dist < shortestDistance then
-                            shortestDistance = dist
-                            closestCoin = obj
-                        end
-                    end
-                end
-
-                if closestCoin then
-                    for _, p in ipairs(LocalPlayer.Character:GetDescendants()) do
-                        if p:IsA("BasePart") then p.CanCollide = false end
-                    end
-                    root.CFrame = closestCoin.CFrame + Vector3.new(0, 1, 0)
-                end
+CreateToggle(PageFunctions, "MM2 ESP (Все игроки)", "ESP", function(state)
+    if state then
+        table.insert(Connections, RunService.Heartbeat:Connect(UpdateESP))
+    else
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Character and p.Character:FindFirstChild("Delta_Highlight") then
+                p.Character.Delta_Highlight:Destroy()
             end
         end
     end
 end)
 
--- Улучшенный Auto Aim
-local function GetMurdererChar()
-    if Murderer and Murderer.Character and Murderer.Character:FindFirstChild("HumanoidRootPart") then
-        local hum = Murderer.Character:FindFirstChild("Humanoid")
-        if hum and hum.Health > 0 then return Murderer.Character end
+-- 2. ESP Пистолета (Подсветка лежащей пушки)
+local function UpdateGunESP()
+    local gun = Workspace:FindFirstChild("GunDrop")
+    if gun and _G.DeltaConfig.GunIndicator then
+        if not GunHighlight then
+            GunHighlight = Instance.new("Highlight")
+            GunHighlight.Name = "GunDrop_Highlight"
+            GunHighlight.FillColor = Color3.fromRGB(255, 255, 0)
+            GunHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            GunHighlight.FillTransparency = 0.3
+            GunHighlight.Parent = gun
+        end
+    else
+        if GunHighlight then GunHighlight:Destroy(); GunHighlight = nil end
+    end
+end
+
+CreateToggle(PageFunctions, "ESP Лежащего пистолета", "GunIndicator", function(state)
+    if state then
+        table.insert(Connections, RunService.Heartbeat:Connect(UpdateGunESP))
+    elseif GunHighlight then
+        GunHighlight:Destroy()
+        GunHighlight = nil
+    end
+end)
+
+-- 3. Auto-Aim (Аим на Убийцу / Шерифа)
+local function GetAimTarget()
+    GetMM2Roles()
+    local target = nil
+    -- Если мы шериф/невиновный — целимся в убийцу. Если мы убийца — в шерифа или ближайшего выжившего
+    local isMeMerd = LocalPlayer.Backpack:FindFirstChild("Knife") or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Knife"))
+    
+    if isMeMerd then
+        target = Sheriff
+    else
+        target = Murderer
+    end
+    
+    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+        return target.Character.HumanoidRootPart
     end
     return nil
 end
 
-Connections.AutoAim = RunService.RenderStepped:Connect(function()
-    if not AutoAim_Enabled then return end
-    
-    local myChar = LocalPlayer.Character
-    if not myChar then return end
-    
-    local equippedGun = myChar:FindFirstChild("Gun")
-    if equippedGun and equippedGun:IsA("Tool") then
-        local targetChar = GetMurdererChar()
-        if targetChar then
-            local targetPart = targetChar.HumanoidRootPart
-            local camera = Workspace.CurrentCamera
+table.insert(Connections, RunService.RenderStepped:Connect(function()
+    if _G.DeltaConfig.AutoAim then
+        local targetPart = GetAimTarget()
+        if targetPart then
+            local cam = Workspace.CurrentCamera
+            cam.CFrame = CFrame.new(cam.CFrame.Position, targetPart.Position)
+        end
+    end
+end))
+
+CreateToggle(PageFunctions, "Умный Аимбот (Auto-Aim)", "AutoAim", nil)
+
+-- 4. Автофарм Монет (Телепорт к монетам)
+local function FarmCoins()
+    while _G.DeltaConfig.AutoFarm do
+        task.wait(0.1)
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            -- Ищем контейнеры монет в MM2 (обычно находятся в CoinContainer на карте)
+            local container = Workspace:FindFirstChild("Normal") or Workspace:FindFirstChild("SandBox")
+            local coinContainer = container and container:FindFirstChild("CoinContainer")
             
-            local lookAt = (targetPart.Position - camera.CFrame.Position).Unit
-            camera.CFrame = CFrame.new(camera.CFrame.Position, camera.CFrame.Position + lookAt)
-            
-            local myRoot = myChar:FindFirstChild("HumanoidRootPart")
-            if myRoot then
-                myRoot.CFrame = CFrame.new(myRoot.Position, Vector3.new(targetPart.Position.X, myRoot.Position.Y, targetPart.Position.Z))
-            end
-
-            equippedGun:Activate()
-            VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
-            VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
-        end
-    end
-end)
-
--- Уютная атмосфера (Cozy Shaders)
-local function ToggleCozyMode(state)
-    CozyMode_Enabled = state
-    if state then
-        local cc = Lighting:FindFirstChild("Delta_Cozy") or Instance.new("ColorCorrectionEffect", Lighting)
-        cc.Name = "Delta_Cozy"
-        cc.TintColor = Color3.fromRGB(255, 200, 150)
-        cc.Contrast = 0.15
-        cc.Saturation = 0.1
-        
-        local bloom = Lighting:FindFirstChild("Delta_Bloom") or Instance.new("BloomEffect", Lighting)
-        bloom.Name = "Delta_Bloom"
-        bloom.Intensity = 0.6
-        bloom.Size = 24
-    else
-        local cc = Lighting:FindFirstChild("Delta_Cozy")
-        if cc then cc:Destroy() end
-        local bloom = Lighting:FindFirstChild("Delta_Bloom")
-        if bloom then bloom:Destroy() end
-    end
-end
-
--- Скайбокс с обходом защиты MM2
-local function ApplyCustomSkybox(id)
-    CustomSkyID = id
-    for _, obj in ipairs(Lighting:GetChildren()) do
-        if obj:IsA("Sky") then obj:Destroy() end
-    end
-    
-    local sky = Instance.new("Sky")
-    sky.Name = "DeltaCustomSky"
-    sky.SkyboxBk = "rbxassetid://" .. tostring(id)
-    sky.SkyboxDn = "rbxassetid://" .. tostring(id)
-    sky.SkyboxFt = "rbxassetid://" .. tostring(id)
-    sky.SkyboxLf = "rbxassetid://" .. tostring(id)
-    sky.SkyboxRt = "rbxassetid://" .. tostring(id)
-    sky.SkyboxUp = "rbxassetid://" .. tostring(id)
-    sky.Parent = Lighting
-end
-
-Connections.SkyLock = RunService.RenderStepped:Connect(function()
-    if CustomSkyID then
-        local currentSky = Lighting:FindFirstChildOfClass("Sky")
-        if not currentSky or currentSky.Name ~= "DeltaCustomSky" then
-            ApplyCustomSkybox(CustomSkyID)
-        end
-    end
-end)
-
-local function ResetSkybox()
-    CustomSkyID = nil
-    for _, obj in ipairs(Lighting:GetChildren()) do
-        if obj:IsA("Sky") then obj:Destroy() end
-    end
-    
-    if OriginalSkybox.Bk then
-        local sky = Instance.new("Sky", Lighting)
-        sky.SkyboxBk = OriginalSkybox.Bk
-        sky.SkyboxDn = OriginalSkybox.Dn
-        sky.SkyboxFt = OriginalSkybox.Ft
-        sky.SkyboxLf = OriginalSkybox.Lf
-        sky.SkyboxRt = OriginalSkybox.Rt
-        sky.SkyboxUp = OriginalSkybox.Up
-    end
-end
-
--- Логика Партиклов (Перепривязка при спавне)
-local function CreateMyParticles(root)
-    if not root then return end
-    local old = root:FindFirstChild("Delta_Particles")
-    if old then old:Destroy() end
-    
-    if Particles_Enabled then
-        local pe = Instance.new("ParticleEmitter")
-        pe.Name = "Delta_Particles"
-        pe.Texture = "rbxassetid://241584311"
-        pe.LightEmission = 1
-        pe.Color = ColorSequence.new(Color3.fromRGB(255, 100, 200), Color3.fromRGB(100, 255, 255))
-        pe.Size = NumberSequence.new(0.6, 0)
-        pe.Speed = NumberRange.new(2, 5)
-        pe.Lifetime = NumberRange.new(1, 2.5)
-        pe.Rate = 45
-        pe.Parent = root
-    end
-end
-
-LocalPlayer.CharacterAdded:Connect(function(char)
-    if Particles_Enabled then
-        local root = char:WaitForChild("HumanoidRootPart", 5)
-        if root then
-            task.wait(0.5)
-            CreateMyParticles(root)
-        end
-    end
-end)
-
-local function ToggleParticles(state)
-    Particles_Enabled = state
-    local char = LocalPlayer.Character
-    if char then
-        local root = char:FindFirstChild("HumanoidRootPart")
-        if root then
-            if state then
-                CreateMyParticles(root)
-            else
-                local pe = root:FindFirstChild("Delta_Particles")
-                if pe then pe:Destroy() end
+            if coinContainer then
+                for _, coin in ipairs(coinContainer:GetChildren()) do
+                    if coin:IsA("BasePart") or coin:FindFirstChild("Coin") then
+                        if _G.DeltaConfig.AutoFarm then
+                            char.HumanoidRootPart.CFrame = coin.CFrame
+                            task.wait(0.3) -- Безопасная задержка, чтобы не кикнул античит
+                        end
+                    end
+                end
             end
         end
     end
 end
 
--- Надежный FPS Бустер
-local function TogglePixelBoost(state)
-    PixelBoost_Enabled = state
-    if state then
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-    else
-        settings().Rendering.QualityLevel = OriginalLighting.QualityLevel
-    end
-end
-
-local function ToggleTextureBoost(state)
-    TextureBoost_Enabled = state
-    if state then
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and not OriginalMaterials[obj] then
-                OriginalMaterials[obj] = {Material = obj.Material, Color = obj.Color}
-                obj.Material = Enum.Material.SmoothPlastic
-            elseif obj:IsA("Texture") or obj:IsA("Decal") then
-                obj.Transparency = 1
-            end
-        end
-    else
-        for obj, data in pairs(OriginalMaterials) do
-            if obj and obj.Parent then
-                obj.Material = data.Material
-            end
-        end
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("Texture") or obj:IsA("Decal") then
-                obj.Transparency = 0
-            end
-        end
-        table.clear(OriginalMaterials)
-    end
-end
-
-local function TogglePhysicsBoost(state)
-    PhysicsBoost_Enabled = state
-    if state then
-        Lighting.GlobalShadows = false
-        Lighting.Brightness = 1
-    else
-        Lighting.GlobalShadows = OriginalLighting.GlobalShadows
-        Lighting.Brightness = OriginalLighting.Brightness
-    end
-end
--- [[ ЧАСТЬ 3: ESP, Наполнение Вкладок Кнопками и Системные Лупы ]]
-
--- MM2 ESP
-local function CreateESP(player)
-    if player == LocalPlayer then return end
-
-    local function CharacterAdded(char)
-        local head = char:WaitForChild("Head", 5)
-        local root = char:WaitForChild("HumanoidRootPart", 5)
-        if not head or not root then return end
-
-        local billboard = Instance.new("BillboardGui")
-        billboard.Name = "MM2_ESP"
-        billboard.AlwaysOnTop = true
-        billboard.Size = UDim2.new(0, 150, 0, 45)
-        billboard.Adornee = head
-        billboard.Parent = head
-
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.TextStrokeTransparency = 0
-        label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        label.Font = Enum.Font.SourceSansBold
-        label.TextSize = 12
-        label.Parent = billboard
-
-        local highlight = Instance.new("Highlight")
-        highlight.Name = "MM2_Highlight"
-        highlight.Adornee = char
-        highlight.FillTransparency = 0.5
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.Parent = char
-
-        local connection
-        connection = RunService.RenderStepped:Connect(function()
-            if not MM2_ESP_Enabled or not char:IsDescendantOf(workspace) then
-                billboard.Enabled = false
-                highlight.Enabled = false
-                return
-            end
-            
-            billboard.Enabled = true
-            highlight.Enabled = true
-
-            local roleText = "Innocent"
-            local color = Color3.fromRGB(0, 255, 100)
-
-            if player == Murderer then
-                roleText = "MURDERER 💀"
-                color = Color3.fromRGB(255, 0, 0)
-            elseif player == Sheriff then
-                roleText = "SHERIFF ︻╦╤─"
-                color = Color3.fromRGB(0, 150, 255)
-            end
-
-            highlight.FillColor = color
-            label.TextColor3 = color
-
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local myRoot = LocalPlayer.Character.HumanoidRootPart
-                local distance = math.floor((root.Position - myRoot.Position).Magnitude)
-                label.Text = string.format("%s\n%s\n[%d Studs]", player.DisplayName, roleText, distance)
-            else
-                label.Text = string.format("%s\n%s", player.DisplayName, roleText)
-            end
-        end)
-
-        EspObjects[player] = {Billboard = billboard, Highlight = highlight, Connection = connection}
-    end
-
-    if player.Character then task.spawn(CharacterAdded, player.Character) end
-    player.CharacterAdded:Connect(CharacterAdded)
-end
-
-task.spawn(function()
-    while true do
-        task.wait(1)
-        if MM2_ESP_Enabled then GetMM2Roles() end
-    end
+CreateToggle(PageFunctions, "Безопасный автофарм монет", "AutoFarm", function(state)
+    if state then task.spawn(FarmCoins) end
 end)
 
--- Поиск пистолета
-Connections.GunTracker = RunService.RenderStepped:Connect(function()
-    if not MM2_ESP_Enabled then
-        if GunHighlight then GunHighlight:Destroy() GunHighlight = nil end
-        return
-    end
-    local gunDrop = Workspace:FindFirstChild("GunDrop")
-    if gunDrop and gunDrop:IsA("BasePart") then
-        if not GunHighlight then
-            GunHighlight = Instance.new("Highlight")
-            GunHighlight.Adornee = gunDrop
-            GunHighlight.FillColor = Color3.fromRGB(255, 255, 0)
-            GunHighlight.FillTransparency = 0.3
-            GunHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-            GunHighlight.Parent = gunDrop
-            
-            local billboard = Instance.new("BillboardGui")
-            billboard.Name = "Gun_ESP"
-            billboard.AlwaysOnTop = true
-            billboard.Size = UDim2.new(0, 150, 0, 40)
-            billboard.Adornee = gunDrop
-            billboard.Parent = gunDrop
-
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(1, 0, 1, 0)
-            label.BackgroundTransparency = 1
-            label.TextColor3 = Color3.fromRGB(255, 215, 0)
-            label.TextStrokeTransparency = 0
-            label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            label.Font = Enum.Font.SourceSansBold
-            label.TextSize = 13
-            label.Text = "★ GUN ★"
-            label.Parent = billboard
-        end
-    else
-        if GunHighlight then GunHighlight:Destroy() GunHighlight = nil end
-    end
-end)
-
-
--- [[ Регистрация Кнопок Вкладок ]]
-
--- Вкладка 1: ФУНКЦИИ
-CreateToggle(Container, "MM2 ESP", false, function(state)
-    MM2_ESP_Enabled = state
-    if state then
-        GetMM2Roles()
-        for _, p in ipairs(Players:GetPlayers()) do CreateESP(p) end
-    end
-end)
-
-CreateToggle(Container, "Auto Aim (Шифтлок + Клик)", false, function(state)
-    AutoAim_Enabled = state
-end)
-
-CreateToggle(Container, "Автофарм Монет (до 40)", false, function(state)
-    AutoFarm_Enabled = state
-end)
-
-CreateToggle(Container, "Fullbright", false, function(state)
+-- 5. Fullbright (Освещение всей карты)
+CreateToggle(PageFunctions, "Полное освещение (Fullbright)", "Fullbright", function(state)
     if state then
         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
         Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
@@ -720,78 +457,595 @@ CreateToggle(Container, "Fullbright", false, function(state)
     end
 end)
 
-CreateToggle(Container, "Infinite Jump", false, function(state)
-    InfiniteJump_Enabled = state
-end)
-
-CreateSlider("WalkSpeed", 16, 100, 16, function(value)
-    CustomSpeed = value
-end)
-
-
--- Вкладка 2: ВИЗУАЛ
-CreateToggle(VisualContainer, "Уютная Атмосфера (Cozy)", false, function(state)
-    ToggleCozyMode(state)
-end)
-
-CreateToggle(VisualContainer, "Звездная пыль на тебе", false, function(state)
-    ToggleParticles(state)
-end)
-
--- Твои кастомные ID
-CreateButton(VisualContainer, "Кастомное Небо (ID: 7905884)", function()
-    ApplyCustomSkybox(7905884)
-end)
-
-CreateButton(VisualContainer, "Кастомное Небо (ID: 93751292568591)", function()
-    ApplyCustomSkybox(93751292568591)
-end)
-
-CreateButton(VisualContainer, "Вернуть стандартное небо", function()
-    ResetSkybox()
-end)
-
-
--- Вкладка 3: FPS БУСТ
-CreateToggle(FpsContainer, "Буст 1: Сжатие Пикселей", false, function(state)
-    TogglePixelBoost(state)
-end)
-
-CreateToggle(FpsContainer, "Буст 2: Без Текстур", false, function(state)
-    ToggleTextureBoost(state)
-end)
-
-CreateToggle(FpsContainer, "Буст 3: Тени и Окружение", false, function(state)
-    TogglePhysicsBoost(state)
-end)
-
-
--- [[ Системные События (Полет/Прыжки) ]]
-Connections.InfJump = UserInputService.JumpRequest:Connect(function()
-    if InfiniteJump_Enabled and LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
+-- 6. Cozy Mode (Уютный шейдер)
+CreateToggle(PageFunctions, "Уютный шейдер (Cozy Mode)", "CozyMode", function(state)
+    local cc = Lighting:FindFirstChild("Delta_Cozy")
+    if state then
+        if not cc then
+            cc = Instance.new("ColorCorrectionEffect")
+            cc.Name = "Delta_Cozy"
+            cc.Parent = Lighting
+        end
+        cc.TintColor = Color3.fromRGB(255, 195, 135) -- Мягкий персиковый тон
+        cc.Saturation = 0.15
+        cc.Contrast = 0.1
+        cc.Enabled = true
+    else
+        if cc then cc.Enabled = false end
     end
 end)
 
-Connections.SpeedLoop = RunService.RenderStepped:Connect(function()
-    if LocalPlayer.Character then
-        local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid and humanoid.WalkSpeed ~= CustomSpeed then
-            humanoid.WalkSpeed = CustomSpeed
+-- 7. Детектор "Кто взял пистолет" (Из Части 2)
+local function TrackGunHolders()
+    local lastHolder = nil
+    while task.wait(0.5) do
+        if _G.DeltaConfig.GunIndicator then
+            GetMM2Roles()
+            if Sheriff and Sheriff ~= lastHolder then
+                lastHolder = Sheriff
+                CreateNotify("ИНФОРМАЦИЯ", Sheriff.Name .. " взял пистолет!", Color3.fromRGB(0, 150, 255))
+                if _G.DeltaConfig.GunSound then
+                    local s = Instance.new("Sound", Workspace)
+                    s.SoundId = "rbxassetid://12221967" -- Чистый системный пинг
+                    s:Play()
+                    task.delay(1.5, function() s:Destroy() end)
+                end
+            end
         end
     end
-end)
+end
+task.spawn(TrackGunHolders)
+-- [[ ЧАСТЬ 3: Логика "Утилит" ]]
 
--- Очистка при отключении игрока
-Players.PlayerRemoving:Connect(function(player)
-    if EspObjects[player] then
-        if EspObjects[player].Billboard then EspObjects[player].Billboard:Destroy() end
-        if EspObjects[player].Highlight then EspObjects[player].Highlight:Destroy() end
-        if EspObjects[player].Connection then EspObjects[player].Connection:Disconnect() end
-        EspObjects[player] = nil
+-- [[ Переменные для отслеживания раунда ]]
+local RoundStatusLabel = nil
+local AlivePlayersLabel = nil
+
+-- Функция для подсчета выживших (невинных) игроков в раунде MM2
+local function GetAlivePlayersCount()
+    local count = 0
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            local humanoid = player.Character.Humanoid
+            -- Игрок жив, если здоровье > 0 и у него нет роли наблюдателя (обычно в лобби)
+            if humanoid.Health > 0 and player.Character:FindFirstChild("HumanoidRootPart") then
+                -- Проверка на нахождение в лобби (если на карте лобби есть спавн-зона, то исключаем)
+                -- В MM2 живыми в раунде считаются те, у кого в рюкзаке или руках нет "наблюдателя"
+                if not player.Backpack:FindFirstChild("Spectator") and not player.Character:FindFirstChild("Spectator") then
+                    count = count + 1
+                end
+            end
+        end
+    end
+    return count
+end
+
+-- Функция обновления интерфейса раунда
+local function UpdateRoundStats()
+    if _G.DeltaConfig.RoundInfo then
+        GetMM2Roles()
+        local statusText = "Ожидание игры..."
+        
+        if Murderer then
+            statusText = "РАУНД АКТИВЕН ⚔️"
+        elseif not Murderer and not Sheriff then
+            statusText = "В ЛОББИ ⌛"
+        end
+        
+        if RoundStatusLabel then
+            RoundStatusLabel.Text = "Статус: " .. statusText
+        end
+    end
+    
+    if _G.DeltaConfig.AliveCount then
+        local aliveCount = GetAlivePlayersCount()
+        if AlivePlayersLabel then
+            AlivePlayersLabel.Text = "Живых игроков: " .. tostring(aliveCount)
+        end
+    end
+end
+
+-- [[ СОЗДАНИЕ ИНТЕРФЕЙСА В ТАБЛИЦЕ УТИЛИТ ]]
+
+-- 1. Текстовые плашки для информеров
+local InfoFrame = Instance.new("Frame")
+InfoFrame.Size = UDim2.new(1, 0, 0, 60)
+InfoFrame.BackgroundTransparency = 0.95
+InfoFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+InfoFrame.Parent = PageUtils
+Instance.new("UICorner", InfoFrame).CornerRadius = UDim.new(0, 6)
+
+RoundStatusLabel = Instance.new("TextLabel")
+RoundStatusLabel.Size = UDim2.new(1, -10, 0, 25)
+RoundStatusLabel.Position = UDim2.new(0, 10, 0, 5)
+RoundStatusLabel.BackgroundTransparency = 1
+RoundStatusLabel.Text = "Статус: Выключено"
+RoundStatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+RoundStatusLabel.Font = Enum.Font.SourceSansBold
+RoundStatusLabel.TextSize = 13
+RoundStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+RoundStatusLabel.Parent = InfoFrame
+
+AlivePlayersLabel = Instance.new("TextLabel")
+AlivePlayersLabel.Size = UDim2.new(1, -10, 0, 25)
+AlivePlayersLabel.Position = UDim2.new(0, 10, 0, 30)
+AlivePlayersLabel.BackgroundTransparency = 1
+AlivePlayersLabel.Text = "Живых игроков: Выключено"
+AlivePlayersLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+AlivePlayersLabel.Font = Enum.Font.SourceSansSemibold
+AlivePlayersLabel.TextSize = 13
+AlivePlayersLabel.TextXAlignment = Enum.TextXAlignment.Left
+AlivePlayersLabel.Parent = InfoFrame
+
+-- Разделитель
+local Separator = Instance.new("Frame")
+Separator.Size = UDim2.new(1, 0, 0, 1)
+Separator.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Separator.BorderSizePixel = 0
+Separator.Parent = PageUtils
+
+-- 2. Переключатели Утилит
+CreateToggle(PageUtils, "Информация о раунде", "RoundInfo", function(state)
+    if not state and RoundStatusLabel then
+        RoundStatusLabel.Text = "Статус: Выключено"
     end
 end)
 
-print("Delta Premium Ultimate Script (V2 Fixed split) Loaded!")
+CreateToggle(PageUtils, "Счетчик живых игроков", "AliveCount", function(state)
+    if not state and AlivePlayersLabel then
+        AlivePlayersLabel.Text = "Живых игроков: Выключено"
+    end
+end)
 
+-- Луп для обновления статистики каждую секунду
+table.insert(Connections, RunService.Heartbeat:Connect(function()
+    UpdateRoundStats()
+end))
+
+-- 3. Анти-АФК
+CreateToggle(PageUtils, "Анти-АФК (Защита от кика)", "AntiAFK", function(state)
+    if state then
+        CreateNotify("УТИЛИТЫ", "Анти-АФК успешно запущен!", Color3.fromRGB(0, 255, 100))
+    end
+end)
+
+-- Логика обхода AFK через событие IDLE
+LocalPlayer.Idled:Connect(function()
+    if _G.DeltaConfig.AntiAFK then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton1(Vector2.new(0, 0))
+        CreateNotify("АНТИ-АФК", "Симуляция активности успешно проведена.", Color3.fromRGB(255, 150, 0))
+    end
+end)
+
+-- 4. Звуковые Ивенты
+CreateToggle(PageUtils, "Звук поднятия пистолета", "GunSound", function(state)
+    if state then
+        CreateNotify("НАСТРОЙКА", "Звуковое уведомление на пушку активировано.", _G.DeltaConfig.MenuColor)
+    end
+end)
+
+CreateToggle(PageUtils, "Звук смерти Шерифа", "SheriffSound", function(state)
+    if state then
+        CreateNotify("НАСТРОЙКА", "Звуковое уведомление на смерть Шерифа активировано.", _G.DeltaConfig.MenuColor)
+    end
+end)
+
+-- Мониторинг смерти Шерифа
+local SheriffAlive = false
+table.insert(Connections, RunService.Heartbeat:Connect(function()
+    if _G.DeltaConfig.SheriffSound then
+        GetMM2Roles()
+        if Sheriff then
+            local char = Sheriff.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            
+            if hum and hum.Health > 0 then
+                SheriffAlive = true
+            elseif hum and hum.Health <= 0 and SheriffAlive then
+                -- Шериф только что погиб!
+                SheriffAlive = false
+                CreateNotify("ВНИМАНИЕ", "Шериф погиб! Пушка свободна!", Color3.fromRGB(255, 50, 50))
+                
+                -- Воспроизведение звука сирены тревоги
+                local s = Instance.new("Sound", Workspace)
+                s.SoundId = "rbxassetid://138080512" -- Драматический звук сирены/тревоги
+                s.Volume = 2
+                s:Play()
+                task.delay(2.5, function() s:Destroy() end)
+            end
+        else
+            SheriffAlive = false
+        end
+    end
+end))
+-- [[ ЧАСТЬ 4: Логика вкладки "Эксплуатация" ]]
+
+-- Список игроков для выбора цели Флинга
+local TargetDropdown = Instance.new("TextButton")
+TargetDropdown.Size = UDim2.new(1, 0, 0, 35)
+TargetDropdown.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TargetDropdown.Text = "Выбрать цель: [Не выбрана]"
+TargetDropdown.TextColor3 = Color3.fromRGB(200, 200, 200)
+TargetDropdown.Font = Enum.Font.SourceSansBold
+TargetDropdown.TextSize = 13
+TargetDropdown.Parent = PageExploits
+
+local DropdownCorner = Instance.new("UICorner")
+DropdownCorner.CornerRadius = UDim.new(0, 6)
+DropdownCorner.Parent = TargetDropdown
+
+local DropdownList = Instance.new("ScrollingFrame")
+DropdownList.Size = UDim2.new(1, 0, 0, 120)
+DropdownList.Position = UDim2.new(0, 0, 1, 5)
+DropdownList.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+DropdownList.Visible = false
+DropdownList.CanvasSize = UDim2.new(0, 0, 0, 0)
+DropdownList.ScrollBarThickness = 4
+DropdownList.ZIndex = 10
+DropdownList.Parent = TargetDropdown
+
+local DropdownLayout = Instance.new("UIListLayout")
+DropdownLayout.Parent = DropdownList
+
+-- Функция обновления списка игроков в выпадающем меню
+local function UpdateDropdown()
+    for _, child in ipairs(DropdownList:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    
+    local playersCount = 0
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            playersCount = playersCount + 1
+            local Item = Instance.new("TextButton")
+            Item.Size = UDim2.new(1, 0, 0, 25)
+            Item.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            Item.BorderSizePixel = 0
+            Item.Text = player.DisplayName .. " (@" .. player.Name .. ")"
+            Item.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Item.Font = Enum.Font.SourceSans
+            Item.TextSize = 12
+            Item.ZIndex = 11
+            Item.Parent = DropdownList
+            
+            Item.MouseButton1Click:Connect(function()
+                _G.DeltaConfig.FlingTarget = player.Name
+                TargetDropdown.Text = "Цель: @" .. player.Name
+                DropdownList.Visible = false
+            end)
+        end
+    end
+    DropdownList.CanvasSize = UDim2.new(0, 0, 0, playersCount * 25)
+end
+
+TargetDropdown.MouseButton1Click:Connect(function()
+    DropdownList.Visible = not DropdownList.Visible
+    if DropdownList.Visible then UpdateDropdown() end
+end)
+
+-- [[ ФУНКЦИИ ЭКСПЛУАТАЦИИ ]]
+
+-- 1. Anti-Fling (Убираем коллизию своего персонажа с другими)
+CreateToggle(PageExploits, "Анти-Флинг (No Collide)", "AntiFling", function(state)
+    if state then
+        CreateNotify("ЭКСПЛУАТАЦИЯ", "Анти-Флинг активирован. Вы неосязаемы.", Color3.fromRGB(0, 255, 100))
+    end
+end)
+
+table.insert(Connections, RunService.Stepped:Connect(function()
+    if _G.DeltaConfig.AntiFling and LocalPlayer.Character then
+        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end))
+
+-- 2. Разрушительный Fling (Раскрутка и выбивание цели)
+local FlingActive = false
+local function ExecuteFling()
+    local targetPlayer = Players:FindFirstChild(_G.DeltaConfig.FlingTarget)
+    if not targetPlayer or not targetPlayer.Character then
+        CreateNotify("ОШИБКА", "Цель не найдена или мертва!", Color3.fromRGB(255, 50, 50))
+        _G.DeltaConfig.Fling = false
+        return
+    end
+
+    local myChar = LocalPlayer.Character
+    local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+    if myHRP and targetHRP then
+        FlingActive = true
+        local originalCFrame = myHRP.CFrame
+        
+        -- Скрываемся из виду и копим скорость
+        local bt = Instance.new("BodyThrust")
+        bt.Force = Vector3.new(999999, 999999, 999999)
+        bt.Location = Vector3.new(0, 1000, 0)
+        bt.Parent = myHRP
+
+        -- Быстрый налет на цель для коллизии
+        local flingTime = tick()
+        while tick() - flingTime < 1.5 and _G.DeltaConfig.Fling and targetHRP.Parent do
+            task.wait()
+            if myHRP and targetHRP then
+                myHRP.Velocity = Vector3.new(10000, 10000, 10000)
+                myHRP.RotVelocity = Vector3.new(10000, 10000, 10000)
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(math.random(-1,1)/10, 0, math.random(-1,1)/10)
+            end
+        end
+
+        -- Возвращаемся на место
+        bt:Destroy()
+        myHRP.Velocity = Vector3.new(0, 0, 0)
+        myHRP.RotVelocity = Vector3.new(0, 0, 0)
+        myHRP.CFrame = originalCFrame
+        FlingActive = false
+        _G.DeltaConfig.Fling = false
+        CreateNotify("ФЛИНГ", "Атака завершена!", Color3.fromRGB(255, 150, 0))
+    end
+end
+
+CreateToggle(PageExploits, "Активировать Флинг цели", "Fling", function(state)
+    if state then
+        if _G.DeltaConfig.FlingTarget == "" then
+            CreateNotify("ОШИБКА", "Сначала выберите игрока в списке!", Color3.fromRGB(255, 50, 50))
+            _G.DeltaConfig.Fling = false
+            return
+        end
+        task.spawn(ExecuteFling)
+    end
+end)
+
+-- 3. Kill All (Только за Мардера)
+CreateToggle(PageExploits, "Убить всех (Только за Мардера)", "KillAll", function(state)
+    if state then
+        local myChar = LocalPlayer.Character
+        local knife = myChar and (myChar:FindFirstChild("Knife") or LocalPlayer.Backpack:FindFirstChild("Knife"))
+        
+        if not knife then
+            CreateNotify("ОШИБКА", "Вы не Мардер или у вас нет ножа!", Color3.fromRGB(255, 50, 50))
+            _G.DeltaConfig.KillAll = false
+            return
+        end
+        
+        CreateNotify("МАСС-КИЛЛ", "Запуск зачистки сервера...", _G.DeltaConfig.MenuColor)
+        
+        -- Снаряжаем нож в руки, если он в рюкзаке
+        if knife.Parent == LocalPlayer.Backpack then
+            knife.Parent = myChar
+        end
+        
+        task.spawn(function()
+            local originalPos = myChar.HumanoidRootPart.CFrame
+            
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local targetHRP = player.Character.HumanoidRootPart
+                    local targetHum = player.Character:FindFirstChild("Humanoid")
+                    
+                    if targetHum and targetHum.Health > 0 and _G.DeltaConfig.KillAll then
+                        -- ТП прямо за спину жертвы
+                        myChar.HumanoidRootPart.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 1.5)
+                        task.wait(0.12)
+                        
+                        -- Атака ножом
+                        knife:Activate()
+                        task.wait(0.08)
+                    end
+                end
+            end
+            
+            -- Возвращение на исходную позицию
+            myChar.HumanoidRootPart.CFrame = originalPos
+            _G.DeltaConfig.KillAll = false
+            CreateNotify("МАСС-КИЛЛ", "Все игроки успешно зачищены!", Color3.fromRGB(0, 255, 100))
+        end)
+    end
+end)
+-- [[ ЧАСТЬ 5: FPS, Настройки, Кредиты и Запуск ]]
+
+-- [[ 1. ВКЛАДКА: FPS БУСТ ]]
+CreateToggle(PageFps, "Сжатие пикселей (3D Render)", "PixelBoost", function(state)
+    if state then
+        settings().Rendering.QualityLevel = 1
+        Workspace.CurrentCamera.ViewSizeAbsolute:Connect(function() end) -- Триггер рендера
+        CreateNotify("FPS БУСТ", "Качество рендеринга снижено до минимума.", Color3.fromRGB(0, 255, 100))
+    else
+        settings().Rendering.QualityLevel = OriginalLighting.QualityLevel
+    end
+end)
+
+CreateToggle(PageFps, "Режим без текстур (Очистка карт)", "TextureBoost", function(state)
+    if state then
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("Decal") or obj:IsA("Texture") then
+                OriginalMaterials[obj] = obj.Texture
+                obj.Texture = ""
+            elseif obj:IsA("BasePart") then
+                OriginalMaterials[obj] = obj.Material
+                obj.Material = Enum.Material.SmoothPlastic
+            end
+        end
+        CreateNotify("FPS БУСТ", "Текстуры временно отключены.", Color3.fromRGB(0, 255, 100))
+    else
+        for obj, original in pairs(OriginalMaterials) do
+            if obj and obj.Parent then
+                if obj:IsA("Decal") or obj:IsA("Texture") then
+                    obj.Texture = original
+                elseif obj:IsA("BasePart") then
+                    obj.Material = original
+                end
+            end
+        end
+        table.clear(OriginalMaterials)
+    end
+end)
+
+
+-- [[ 2. ВКЛАДКА: НАСТРОЙКИ И ИНТЕРФЕЙС ]]
+
+-- Кнопка смены цветовой темы
+local Themes = {
+    {Name = "Delta Crimson", Color = Color3.fromRGB(255, 0, 100)},
+    {Name = "Neon Blue", Color = Color3.fromRGB(0, 150, 255)},
+    {Name = "Vampire Purple", Color = Color3.fromRGB(150, 0, 255)},
+    {Name = "Toxic Green", Color = Color3.fromRGB(0, 255, 100)}
+}
+local CurrentThemeIdx = 1
+
+local ThemeBtn = Instance.new("TextButton")
+ThemeBtn.Size = UDim2.new(1, 0, 0, 35)
+ThemeBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+ThemeBtn.Text = "Сменить тему: Delta Crimson"
+ThemeBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+ThemeBtn.Font = Enum.Font.SourceSansBold
+ThemeBtn.TextSize = 13
+ThemeBtn.Parent = PageSettings
+Instance.new("UICorner", ThemeBtn).CornerRadius = UDim.new(0, 6)
+
+ThemeBtn.MouseButton1Click:Connect(function()
+    CurrentThemeIdx = CurrentThemeIdx + 1
+    if CurrentThemeIdx > #Themes then CurrentThemeIdx = 1 end
+    local nextTheme = Themes[CurrentThemeIdx]
+    
+    _G.DeltaConfig.MenuColor = nextTheme.Color
+    ThemeBtn.Text = "Сменить тему: " .. nextTheme.Name
+    
+    -- Обновляем заголовки и активную вкладку
+    for _, t in pairs(Tabs) do
+        if t.Page.Visible then
+            t.Btn.TextColor3 = nextTheme.Color
+        end
+    end
+    CreateNotify("ТЕМЫ", "Цветовая схема изменена на " .. nextTheme.Name, nextTheme.Color)
+end)
+
+-- Кнопка Выгрузки Скрипта
+local UnloadBtn = Instance.new("TextButton")
+UnloadBtn.Size = UDim2.new(1, 0, 0, 35)
+UnloadBtn.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
+UnloadBtn.Text = "ПОЛНАЯ ВЫГРУЗКА (Убрать чит)"
+UnloadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+UnloadBtn.Font = Enum.Font.SourceSansBold
+UnloadBtn.TextSize = 13
+UnloadBtn.Parent = PageSettings
+Instance.new("UICorner", UnloadBtn).CornerRadius = UDim.new(0, 6)
+
+UnloadBtn.MouseButton1Click:Connect(function()
+    -- Отключаем все лупы и бинды
+    for _, conn in ipairs(Connections) do
+        if conn then conn:Disconnect() end
+    end
+    -- Возвращаем графику и свет
+    Lighting.Ambient = OriginalLighting.Ambient
+    Lighting.OutdoorAmbient = OriginalLighting.OutdoorAmbient
+    Lighting.Brightness = OriginalLighting.Brightness
+    Lighting.ClockTime = OriginalLighting.ClockTime
+    Lighting.FogEnd = OriginalLighting.FogEnd
+    Lighting.GlobalShadows = OriginalLighting.GlobalShadows
+    settings().Rendering.QualityLevel = OriginalLighting.QualityLevel
+    
+    -- Чистим ESP
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character and p.Character:FindFirstChild("Delta_Highlight") then
+            p.Character.Delta_Highlight:Destroy()
+        end
+    end
+    if GunHighlight then GunHighlight:Destroy() end
+    
+    -- Удаляем GUI
+    ScreenGui:Destroy()
+    print("Delta Premium Ultimate успешно выгружен!")
+end)
+
+
+-- [[ 3. ВКЛАДКА: КРЕДИТЫ (Разработчики) ]]
+local CreditsLabel = Instance.new("TextLabel")
+CreditsLabel.Size = UDim2.new(1, 0, 1, 0)
+CreditsLabel.BackgroundTransparency = 1
+CreditsLabel.Text = "DELTA MM2 PREMIUM\n\nРазработчики софта:\n⭐ Makanbaev Aidar & Zoya ⭐\n\nРелиз: v3.0 Ultimate (2026 Edition)\n\nСкрипт создан специально для комфортной игры и жесткого фана!"
+CreditsLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+CreditsLabel.Font = Enum.Font.SourceSansBold
+CreditsLabel.TextSize = 14
+CreditsLabel.TextWrapped = true
+CreditsLabel.Parent = PageCredits
+
+
+-- [[ 4. МОБИЛЬНАЯ КНОПКА «D» ]]
+local MobileButton = Instance.new("TextButton")
+MobileButton.Name = "DeltaOpenBtn"
+MobileButton.Size = UDim2.new(0, _G.DeltaConfig.ButtonSize, 0, _G.DeltaConfig.ButtonSize)
+MobileButton.Position = UDim2.new(0, 10, 0.5, -25)
+MobileButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MobileButton.BackgroundTransparency = _G.DeltaConfig.ButtonTransparency
+MobileButton.Text = "D"
+MobileButton.TextColor3 = Color3.fromRGB(255, 0, 100)
+MobileButton.Font = Enum.Font.SourceSansBold
+MobileButton.TextSize = 22
+MobileButton.Visible = IsMobile -- Кнопка видна только на смартфонах/планшетах
+MobileButton.Parent = ScreenGui
+
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 10)
+BtnCorner.Parent = MobileButton
+
+-- Сделать кнопку передвигаемой по экрану
+MobileButton.Active = true
+MobileButton.Draggable = true
+
+-- Логика скрытия/открытия меню при клике на «D» или на крестик
+local function ToggleGui()
+    MainFrame.Visible = not MainFrame.Visible
+end
+
+MobileButton.MouseButton1Click:Connect(ToggleGui)
+CloseBtn.MouseButton1Click:Connect(ToggleGui)
+
+-- ПК Клавиша открытия (Right Shift)
+UserInputService.InputBegan:Connect(function(input, processed)
+    if not processed and input.KeyCode == Enum.KeyCode.RightShift then
+        ToggleGui()
+    end
+end)
+
+-- Слайдеры для настройки кнопки «D» (Размещены во вкладке Настроек)
+local SizeLabel = Instance.new("TextLabel")
+SizeLabel.Size = UDim2.new(1, 0, 0, 20)
+SizeLabel.BackgroundTransparency = 1
+SizeLabel.Text = "Прозрачность кнопки D: " .. tostring(_G.DeltaConfig.ButtonTransparency)
+SizeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+SizeLabel.Font = Enum.Font.SourceSans
+SizeLabel.TextSize = 12
+SizeLabel.Parent = PageSettings
+
+local TransBtn = Instance.new("TextButton")
+TransBtn.Size = UDim2.new(1, 0, 0, 25)
+TransBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TransBtn.Text = "Переключить прозрачность"
+TransBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TransBtn.Font = Enum.Font.SourceSansBold
+TransBtn.TextSize = 12
+TransBtn.Parent = PageSettings
+Instance.new("UICorner", TransBtn).CornerRadius = UDim.new(0, 4)
+
+TransBtn.MouseButton1Click:Connect(function()
+    if _G.DeltaConfig.ButtonTransparency == 0.2 then
+        _G.DeltaConfig.ButtonTransparency = 0.6
+    else
+        _G.DeltaConfig.ButtonTransparency = 0.2
+    end
+    MobileButton.BackgroundTransparency = _G.DeltaConfig.ButtonTransparency
+    SizeLabel.Text = "Прозрачность кнопки D: " .. tostring(_G.DeltaConfig.ButtonTransparency)
+end)
+
+-- [[ ФИНАЛЬНЫЙ ЗАПУСК ]]
+CreateNotify("УСПЕШНО", "Delta Premium V3.0 успешно запущен!", Color3.fromRGB(0, 255, 100))
+print("====================================")
+print("Delta MM2 Ultimate v3.0 loaded!")
+print("Авторы: Makanbaev Aidar & Zoya")
+print("Используйте ПК клавишу [Right Shift] или мобильную кнопку 'D'")
+print("====================================")
