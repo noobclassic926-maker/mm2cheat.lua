@@ -1,3 +1,5 @@
+-- [[ ЧАСТЬ 1: Сервисы, Настройки и Создание Меню ]]
+
 -- [[ Сервисы Roblox ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -5,12 +7,10 @@ local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local VirtualUser = game:GetService("VirtualUser")
-local GuiService = game:GetService("GuiService")
 local LocalPlayer = Players.LocalPlayer
 
 -- [[ Определение устройства (ПК или Мобильный) ]]
 local IsMobile = false
--- Если у устройства есть тачскрин и нет аппаратной клавиатуры (или это консоль/мобильный API)
 if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
     IsMobile = true
 end
@@ -26,6 +26,7 @@ local CustomSpeed = 16
 -- Состояния визуала
 local CozyMode_Enabled = false
 local Particles_Enabled = false
+local CustomSkyID = nil
 
 -- Состояния FPS бустов
 local PixelBoost_Enabled = false
@@ -48,10 +49,6 @@ local OriginalLighting = {
     QualityLevel = settings().Rendering.QualityLevel
 }
 
--- Переменные для MM2 ролей
-local Murderer = nil
-local Sheriff = nil
-
 -- Сохраняем дефолтный Скайбокс при запуске
 local defaultSky = Lighting:FindFirstChildOfClass("Sky")
 if defaultSky then
@@ -64,6 +61,10 @@ if defaultSky then
         Up = defaultSky.SkyboxUp
     }
 end
+
+-- Переменные для MM2 ролей
+local Murderer = nil
+local Sheriff = nil
 
 -- [[ Определение Ролей ]]
 local function GetMM2Roles()
@@ -79,7 +80,7 @@ local function GetMM2Roles()
     end
 end
 
--- [[ 1. Создание Меню GUI ]]
+-- [[ Создание Меню GUI ]]
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "DeltaMM2PremiumUltimate"
 ScreenGui.ResetOnSpawn = false
@@ -92,7 +93,7 @@ MainFrame.Position = UDim2.new(0.5, -140, 0.4, -190)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
-MainFrame.Draggable = true -- Поддерживает и мышь на ПК, и зажатие на мобилках
+MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local MainUICorner = Instance.new("UICorner")
@@ -103,7 +104,6 @@ MainUICorner.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 35)
 Title.BackgroundTransparency = 1
--- Показываем тип устройства в шапке для красоты
 Title.Text = "DELTA MM2 ULTIMATE (" .. (IsMobile and "MOBILE" or "PC") .. ")"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.SourceSansBold
@@ -205,7 +205,7 @@ MainTabBtn.MouseButton1Click:Connect(function()
 end)
 
 VisualTabBtn.MouseButton1Click:Connect(function()
-    Container.Visible = true; VisualContainer.Visible = true; FpsContainer.Visible = false
+    Container.Visible = false; VisualContainer.Visible = true; FpsContainer.Visible = false
     VisualTabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25); VisualTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     MainTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); MainTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     FpsTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); FpsTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -218,7 +218,7 @@ FpsTabBtn.MouseButton1Click:Connect(function()
     VisualTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); VisualTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 end)
 
--- Кнопка открытия «D» (Показывается в основном для мобилок)
+-- Кнопка открытия «D»
 local OpenBtn = Instance.new("TextButton")
 OpenBtn.Size = UDim2.new(0, 50, 0, 50)
 OpenBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
@@ -236,18 +236,17 @@ Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
 CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false; OpenBtn.Visible = true end)
 OpenBtn.MouseButton1Click:Connect(function() MainFrame.Visible = true; OpenBtn.Visible = false end)
 
--- [[ ФУНКЦИЯ ДЛЯ ПК: Скрытие/Открытие меню на кнопку RightShift ]]
+-- Открытие на ПК через RightShift
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and not IsMobile then
         if input.KeyCode == Enum.KeyCode.RightShift then
             MainFrame.Visible = not MainFrame.Visible
-            -- Если открыли меню, скрываем круглую кнопку "D", если закрыли — можем показать её как индикатор
             OpenBtn.Visible = not MainFrame.Visible
         end
     end
 end)
 
--- Хелперы для создания кнопок управления
+-- Хелперы кнопок
 local function CreateToggle(parent, name, default, callback)
     local state = default
     local Button = Instance.new("TextButton")
@@ -326,9 +325,9 @@ local function CreateSlider(name, min, max, default, callback)
         callback(current)
     end)
 end
+-- [[ ЧАСТЬ 2: Автофарм, Аим, Шейдеры, Небо, Партиклы и Оптимизация ]]
 
-
--- [[ 2. Логика Автофарма Монет ]]
+-- Логика Автофарма Монет
 task.spawn(function()
     while true do
         task.wait(0.2)
@@ -366,8 +365,7 @@ task.spawn(function()
     end
 end)
 
-
--- [[ 3. Улучшенный Auto Aim + Имитация ShiftLock и Авто-клик ]]
+-- Улучшенный Auto Aim
 local function GetMurdererChar()
     if Murderer and Murderer.Character and Murderer.Character:FindFirstChild("HumanoidRootPart") then
         local hum = Murderer.Character:FindFirstChild("Humanoid")
@@ -389,17 +387,14 @@ Connections.AutoAim = RunService.RenderStepped:Connect(function()
             local targetPart = targetChar.HumanoidRootPart
             local camera = Workspace.CurrentCamera
             
-            -- Имитация ShiftLock
             local lookAt = (targetPart.Position - camera.CFrame.Position).Unit
             camera.CFrame = CFrame.new(camera.CFrame.Position, camera.CFrame.Position + lookAt)
             
-            -- Разворачиваем персонажа
             local myRoot = myChar:FindFirstChild("HumanoidRootPart")
             if myRoot then
                 myRoot.CFrame = CFrame.new(myRoot.Position, Vector3.new(targetPart.Position.X, myRoot.Position.Y, targetPart.Position.Z))
             end
 
-            -- Автоматический клик (работает и на ПК, и на мобилках)
             equippedGun:Activate()
             VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
             VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
@@ -407,10 +402,7 @@ Connections.AutoAim = RunService.RenderStepped:Connect(function()
     end
 end)
 
-
--- [[ 4. Вкладка «Визуал» (Шейдеры, Скайбоксы, Партиклы) ]]
-
--- 1. Уютная атмосфера (Cozy Shaders)
+-- Уютная атмосфера (Cozy Shaders)
 local function ToggleCozyMode(state)
     CozyMode_Enabled = state
     if state then
@@ -432,57 +424,97 @@ local function ToggleCozyMode(state)
     end
 end
 
--- 2. Смена Скайбоксов
+-- Скайбокс с обходом защиты MM2
 local function ApplyCustomSkybox(id)
-    local sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
+    CustomSkyID = id
+    for _, obj in ipairs(Lighting:GetChildren()) do
+        if obj:IsA("Sky") then obj:Destroy() end
+    end
+    
+    local sky = Instance.new("Sky")
+    sky.Name = "DeltaCustomSky"
     sky.SkyboxBk = "rbxassetid://" .. tostring(id)
     sky.SkyboxDn = "rbxassetid://" .. tostring(id)
     sky.SkyboxFt = "rbxassetid://" .. tostring(id)
     sky.SkyboxLf = "rbxassetid://" .. tostring(id)
     sky.SkyboxRt = "rbxassetid://" .. tostring(id)
     sky.SkyboxUp = "rbxassetid://" .. tostring(id)
+    sky.Parent = Lighting
 end
 
-local function ResetSkybox()
-    local sky = Lighting:FindFirstChildOfClass("Sky")
-    if sky then
-        if OriginalSkybox.Bk then
-            sky.SkyboxBk = OriginalSkybox.Bk
-            sky.SkyboxDn = OriginalSkybox.Dn
-            sky.SkyboxFt = OriginalSkybox.Ft
-            sky.SkyboxLf = OriginalSkybox.Lf
-            sky.SkyboxRt = OriginalSkybox.Rt
-            sky.SkyboxUp = OriginalSkybox.Up
-        else
-            sky:Destroy()
+Connections.SkyLock = RunService.RenderStepped:Connect(function()
+    if CustomSkyID then
+        local currentSky = Lighting:FindFirstChildOfClass("Sky")
+        if not currentSky or currentSky.Name ~= "DeltaCustomSky" then
+            ApplyCustomSkybox(CustomSkyID)
         end
+    end
+end)
+
+local function ResetSkybox()
+    CustomSkyID = nil
+    for _, obj in ipairs(Lighting:GetChildren()) do
+        if obj:IsA("Sky") then obj:Destroy() end
+    end
+    
+    if OriginalSkybox.Bk then
+        local sky = Instance.new("Sky", Lighting)
+        sky.SkyboxBk = OriginalSkybox.Bk
+        sky.SkyboxDn = OriginalSkybox.Dn
+        sky.SkyboxFt = OriginalSkybox.Ft
+        sky.SkyboxLf = OriginalSkybox.Lf
+        sky.SkyboxRt = OriginalSkybox.Rt
+        sky.SkyboxUp = OriginalSkybox.Up
     end
 end
 
--- 3. Кастомные эффекты частиц
-local function ToggleParticles(state)
-    Particles_Enabled = state
-    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+-- Логика Партиклов (Перепривязка при спавне)
+local function CreateMyParticles(root)
     if not root then return end
+    local old = root:FindFirstChild("Delta_Particles")
+    if old then old:Destroy() end
     
-    if state then
-        local pe = root:FindFirstChild("Delta_Particles") or Instance.new("ParticleEmitter", root)
+    if Particles_Enabled then
+        local pe = Instance.new("ParticleEmitter")
         pe.Name = "Delta_Particles"
         pe.Texture = "rbxassetid://241584311"
         pe.LightEmission = 1
         pe.Color = ColorSequence.new(Color3.fromRGB(255, 100, 200), Color3.fromRGB(100, 255, 255))
-        pe.Size = NumberSequence.new(0.5, 0)
+        pe.Size = NumberSequence.new(0.6, 0)
         pe.Speed = NumberRange.new(2, 5)
-        pe.Lifetime = NumberRange.new(1, 2)
-        pe.Rate = 35
-    else
-        local pe = root:FindFirstChild("Delta_Particles")
-        if pe then pe:Destroy() end
+        pe.Lifetime = NumberRange.new(1, 2.5)
+        pe.Rate = 45
+        pe.Parent = root
     end
 end
 
+LocalPlayer.CharacterAdded:Connect(function(char)
+    if Particles_Enabled then
+        local root = char:WaitForChild("HumanoidRootPart", 5)
+        if root then
+            task.wait(0.5)
+            CreateMyParticles(root)
+        end
+    end
+end)
 
--- [[ 5. Надежный FPS Бустер ]]
+local function ToggleParticles(state)
+    Particles_Enabled = state
+    local char = LocalPlayer.Character
+    if char then
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if root then
+            if state then
+                CreateMyParticles(root)
+            else
+                local pe = root:FindFirstChild("Delta_Particles")
+                if pe then pe:Destroy() end
+            end
+        end
+    end
+end
+
+-- Надежный FPS Бустер
 local function TogglePixelBoost(state)
     PixelBoost_Enabled = state
     if state then
@@ -528,9 +560,9 @@ local function TogglePhysicsBoost(state)
         Lighting.Brightness = OriginalLighting.Brightness
     end
 end
+-- [[ ЧАСТЬ 3: ESP, Наполнение Вкладок Кнопками и Системные Лупы ]]
 
-
--- [[ 6. MM2 ESP ]]
+-- MM2 ESP
 local function CreateESP(player)
     if player == LocalPlayer then return end
 
@@ -651,7 +683,7 @@ Connections.GunTracker = RunService.RenderStepped:Connect(function()
 end)
 
 
--- [[ 7. Регистрация Кнопок Вкладок ]]
+-- [[ Регистрация Кнопок Вкладок ]]
 
 -- Вкладка 1: ФУНКЦИИ
 CreateToggle(Container, "MM2 ESP", false, function(state)
@@ -706,11 +738,12 @@ CreateToggle(VisualContainer, "Звездная пыль на тебе", false, 
     ToggleParticles(state)
 end)
 
-CreateButton(VisualContainer, "Летнее Небо (Лето)", function()
+-- Твои кастомные ID
+CreateButton(VisualContainer, "Кастомное Небо (ID: 7905884)", function()
     ApplyCustomSkybox(7905884)
 end)
 
-CreateButton(VisualContainer, "Холодное Небо", function()
+CreateButton(VisualContainer, "Кастомное Небо (ID: 93751292568591)", function()
     ApplyCustomSkybox(93751292568591)
 end)
 
@@ -760,4 +793,5 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
-print("Delta Ultimate Cross-Platform Script Successfully Loaded!")
+print("Delta Premium Ultimate Script (V2 Fixed split) Loaded!")
+
