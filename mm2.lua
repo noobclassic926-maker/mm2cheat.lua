@@ -1,9 +1,10 @@
--- [[ Сервисы ]]
+-- [[ Сервисы Roblox ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 
 -- Состояния функций
@@ -11,6 +12,7 @@ local MM2_ESP_Enabled = false
 local Fullbright_Enabled = false
 local AutoAim_Enabled = false
 local InfiniteJump_Enabled = false
+local AutoFarm_Enabled = false
 local CustomSpeed = 16
 
 -- Таблицы данных
@@ -18,53 +20,120 @@ local EspObjects = {}
 local Connections = {}
 local GunHighlight = nil
 
--- Переменные для ролей MM2
+-- Переменные для MM2
 local Murderer = nil
 local Sheriff = nil
 
--- [[ Определение Ролей в MM2 ]]
+-- [[ Определение Ролей ]]
 local function GetMM2Roles()
     Murderer = nil
     Sheriff = nil
     for _, player in ipairs(Players:GetPlayers()) do
         if player.Character then
-            -- Проверка по наличию оружия в бэкпаке или в руках
             local hasKnife = player.Backpack:FindFirstChild("Knife") or player.Character:FindFirstChild("Knife")
             local hasGun = player.Backpack:FindFirstChild("Gun") or player.Character:FindFirstChild("Gun")
-            
-            if hasKnife then
-                Murderer = player
-            elseif hasGun then
-                Sheriff = player
-            end
+            if hasKnife then Murderer = player
+            elseif hasGun then Sheriff = player end
         end
     end
 end
 
 -- [[ 1. Создание Меню GUI ]]
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DeltaMM2GUI"
+ScreenGui.Name = "DeltaMM2Premium"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 260, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -130, 0.4, -160)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Size = UDim2.new(0, 280, 0, 360)
+MainFrame.Position = UDim2.new(0.5, -140, 0.4, -180)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local MainUICorner = Instance.new("UICorner")
-MainUICorner.CornerRadius = UDim.new(0, 10)
+MainUICorner.CornerRadius = UDim.new(0, 12)
 MainUICorner.Parent = MainFrame
+
+-- Вкладки (Главная и FPS)
+local TabContainer = Instance.new("Frame")
+TabContainer.Size = UDim2.new(1, 0, 0, 30)
+TabContainer.Position = UDim2.new(0, 0, 0, 35)
+TabContainer.BackgroundTransparency = 1
+TabContainer.Parent = MainFrame
+
+local MainTabBtn = Instance.new("TextButton")
+MainTabBtn.Size = UDim2.new(0.5, 0, 1, 0)
+MainTabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainTabBtn.Text = "Функции"
+MainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MainTabBtn.Font = Enum.Font.SourceSansBold
+MainTabBtn.TextSize = 14
+MainTabBtn.Parent = TabContainer
+
+local FpsTabBtn = Instance.new("TextButton")
+FpsTabBtn.Size = UDim2.new(0.5, 0, 1, 0)
+FpsTabBtn.Position = UDim2.new(0.5, 0, 0, 0)
+FpsTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+FpsTabBtn.Text = "FPS Буст"
+FpsTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+FpsTabBtn.Font = Enum.Font.SourceSansBold
+FpsTabBtn.TextSize = 14
+FpsTabBtn.Parent = TabContainer
+
+-- Списки под вкладки
+local Container = Instance.new("ScrollingFrame")
+Container.Size = UDim2.new(1, -20, 1, -85)
+Container.Position = UDim2.new(0, 10, 0, 75)
+Container.BackgroundTransparency = 1
+Container.CanvasSize = UDim2.new(0, 0, 0, 450)
+Container.ScrollBarThickness = 2
+Container.Visible = true
+Container.Parent = MainFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.Parent = Container
+
+local FpsContainer = Instance.new("ScrollingFrame")
+FpsContainer.Size = UDim2.new(1, -20, 1, -85)
+FpsContainer.Position = UDim2.new(0, 10, 0, 75)
+FpsContainer.BackgroundTransparency = 1
+FpsContainer.CanvasSize = UDim2.new(0, 0, 0, 300)
+FpsContainer.ScrollBarThickness = 2
+FpsContainer.Visible = false
+FpsContainer.Parent = MainFrame
+
+local FpsUIList = Instance.new("UIListLayout")
+FpsUIList.Padding = UDim.new(0, 8)
+FpsUIList.Parent = FpsContainer
+
+-- Переключение вкладок
+MainTabBtn.MouseButton1Click:Connect(function()
+    Container.Visible = true
+    FpsContainer.Visible = false
+    MainTabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    MainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    FpsTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    FpsTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+end)
+
+FpsTabBtn.MouseButton1Click:Connect(function()
+    Container.Visible = false
+    FpsContainer.Visible = true
+    FpsTabBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    FpsTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MainTabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    MainTabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+end)
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 0, 35)
 Title.BackgroundTransparency = 1
-Title.Text = "DELTA MM2"
+Title.Text = "DELTA MM2 PREMIUM"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 16
@@ -80,71 +149,44 @@ CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.TextSize = 18
 CloseBtn.Parent = MainFrame
 
-local Container = Instance.new("ScrollingFrame")
-Container.Size = UDim2.new(1, -20, 1, -50)
-Container.Position = UDim2.new(0, 10, 0, 45)
-Container.BackgroundTransparency = 1
-Container.CanvasSize = UDim2.new(0, 0, 0, 320)
-Container.ScrollBarThickness = 2
-Container.Parent = MainFrame
-
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Padding = UDim.new(0, 8)
-UIListLayout.Parent = Container
-
 local OpenBtn = Instance.new("TextButton")
-OpenBtn.Name = "OpenBtn"
 OpenBtn.Size = UDim2.new(0, 50, 0, 50)
 OpenBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
-OpenBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+OpenBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 OpenBtn.Text = "D"
-OpenBtn.TextColor3 = Color3.fromRGB(255, 0, 100) -- Розово-красный акцент под MM2
+OpenBtn.TextColor3 = Color3.fromRGB(255, 0, 100)
 OpenBtn.Font = Enum.Font.SourceSansBold
 OpenBtn.TextSize = 22
 OpenBtn.Visible = false
 OpenBtn.Active = true
 OpenBtn.Draggable = true
 OpenBtn.Parent = ScreenGui
+Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
 
-local OpenUICorner = Instance.new("UICorner")
-OpenUICorner.CornerRadius = UDim.new(1, 0)
-OpenUICorner.Parent = OpenBtn
+CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false; OpenBtn.Visible = true end)
+OpenBtn.MouseButton1Click:Connect(function() MainFrame.Visible = true; OpenBtn.Visible = false end)
 
-CloseBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-    OpenBtn.Visible = true
-end)
-
-OpenBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = true
-    OpenBtn.Visible = false
-end)
-
--- Функция создания Переключателей
-local function CreateToggle(name, default, callback)
+-- Хелперы для создания кнопок
+local function CreateToggle(parent, name, default, callback)
     local state = default
     local Button = Instance.new("TextButton")
     Button.Size = UDim2.new(1, 0, 0, 35)
-    Button.BackgroundColor3 = state and Color3.fromRGB(80, 20, 30) or Color3.fromRGB(30, 30, 30)
+    Button.BackgroundColor3 = state and Color3.fromRGB(100, 20, 40) or Color3.fromRGB(30, 30, 30)
     Button.Text = name .. (state and " : ON" or " : OFF")
     Button.TextColor3 = Color3.fromRGB(255, 255, 255)
     Button.Font = Enum.Font.SourceSansSemibold
-    Button.TextSize = 14
-    Button.Parent = Container
-    
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 6)
-    Corner.Parent = Button
+    Button.TextSize = 13
+    Button.Parent = parent
+    Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
     
     Button.MouseButton1Click:Connect(function()
         state = not state
-        Button.BackgroundColor3 = state and Color3.fromRGB(120, 30, 45) or Color3.fromRGB(30, 30, 30)
+        Button.BackgroundColor3 = state and Color3.fromRGB(150, 30, 60) or Color3.fromRGB(30, 30, 30)
         Button.Text = name .. (state and " : ON" or " : OFF")
         callback(state)
     end)
 end
 
--- Функция создания Ползунков
 local function CreateSlider(name, min, max, default, callback)
     local SliderFrame = Instance.new("Frame")
     SliderFrame.Size = UDim2.new(1, 0, 0, 45)
@@ -191,9 +233,136 @@ local function CreateSlider(name, min, max, default, callback)
     end)
 end
 
+-- [[ 2. Функция Автофарма монет (Левитация/Телепорт) ]]
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        if AutoFarm_Enabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            -- Проверка заполненности сумки (в MM2 лимит монет обычно 40)
+            local coinData = LocalPlayer:FindFirstChild("leaderstats") and LocalPlayer.leaderstats:FindFirstChild("Coins")
+            local playerData = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("MainGUI")
+            
+            -- Если монет 40 — делаем ресет персонажа
+            if coinData and coinData.Value >= 40 then
+                local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.Health = 0 -- Ресет
+                    task.wait(4) -- Ждем респавна
+                end
+            else
+                -- Поиск монет на карте
+                local root = LocalPlayer.Character.HumanoidRootPart
+                local closestCoin = nil
+                local shortestDistance = math.huge
 
--- [[ 2. Логика MM2 ESP (Роли + Пистолет) ]]
+                -- Монеты в MM2 лежат в контейнере карты в Workspace
+                for _, obj in ipairs(Workspace:GetDescendants()) do
+                    if obj.Name == "Coin_Sub" or obj.Name == "Coin" or (obj:IsA("BasePart") and obj.Parent.Name == "CoinContainer") then
+                        local dist = (obj.Position - root.Position).Magnitude
+                        if dist < shortestDistance then
+                            shortestDistance = dist
+                            closestCoin = obj
+                        end
+                    end
+                end
 
+                -- Летим к ближайшей монете
+                if closestCoin then
+                    -- Отключаем коллизию на время полета
+                    for _, p in ipairs(LocalPlayer.Character:GetDescendants()) do
+                        if p:IsA("BasePart") then p.CanCollide = false end
+                    end
+                    -- Плавное перемещение к монете
+                    root.CFrame = closestCoin.CFrame + Vector3.new(0, 1, 0)
+                end
+            end
+        end
+    end
+end)
+
+-- [[ 3. Улучшенный Auto Aim + Имитация ShiftLock и Авто-клик ]]
+local function GetMurdererChar()
+    if Murderer and Murderer.Character and Murderer.Character:FindFirstChild("HumanoidRootPart") then
+        local hum = Murderer.Character:FindFirstChild("Humanoid")
+        if hum and hum.Health > 0 then return Murderer.Character end
+    end
+    return nil
+end
+
+Connections.AutoAim = RunService.RenderStepped:Connect(function()
+    if not AutoAim_Enabled then return end
+    
+    local myChar = LocalPlayer.Character
+    if not myChar then return end
+    
+    -- Проверяем, взят ли пистолет в руки
+    local equippedGun = myChar:FindFirstChild("Gun")
+    if equippedGun and equippedGun:IsA("Tool") then
+        local targetChar = GetMurdererChar()
+        if targetChar then
+            local targetPart = targetChar.HumanoidRootPart
+            local camera = Workspace.CurrentCamera
+            
+            -- 1. Эмуляция ShiftLock (камера жестко привязана к направлению персонажа и цели)
+            local lookAt = (targetPart.Position - camera.CFrame.Position).Unit
+            camera.CFrame = CFrame.new(camera.CFrame.Position, camera.CFrame.Position + lookAt)
+            
+            -- 2. Поворачиваем самого персонажа лицом к убийце
+            local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+            if myRoot then
+                myRoot.CFrame = CFrame.new(myRoot.Position, Vector3.new(targetPart.Position.X, myRoot.Position.Y, targetPart.Position.Z))
+            end
+
+            -- 3. Автоматический клик (активация пистолета и клик через VirtualUser)
+            equippedGun:Activate()
+            VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
+            VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
+        end
+    end
+end)
+
+-- [[ 4. Три метода FPS Буста ]]
+
+-- Способ 1: Сжатие пикселей (Рендеринг в низком разрешении)
+local function SetPixelFPSBoost(state)
+    if state then
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+        Workspace.CurrentCamera.FieldOfView = 70
+    else
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+    end
+end
+
+-- Способ 2: Удаление текстур и наложений (Текстуры заменяются на гладкие цвета)
+local function SetNoTexturesBoost(state)
+    if state then
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("Texture") or obj:IsA("Decal") then
+                obj.Transparency = 1
+            elseif obj:IsA("BasePart") then
+                obj.Material = Enum.Material.SmoothPlastic
+            end
+        end
+    end
+end
+
+-- Способ 3: Оптимизация физики и полное отключение теней / эффектов
+local function SetPhysicsAndShadowsBoost(state)
+    if state then
+        Lighting.GlobalShadows = false
+        for _, obj in ipairs(Lighting:GetDescendants()) do
+            if obj:IsA("PostEffect") or obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("DepthOfFieldEffect") then
+                obj.Enabled = false
+            end
+        end
+        -- Снижаем нагрузку на физический движок для невидимых объектов
+        settings().Physics.PhysicsEnvironmentalThrottle = Enum.EnviromentalPhysicsThrottle.DefaultAuto
+    else
+        Lighting.GlobalShadows = true
+    end
+end
+
+-- [[ 5. MM2 ESP ]]
 local function CreateESP(player)
     if player == LocalPlayer then return end
 
@@ -224,7 +393,6 @@ local function CreateESP(player)
         highlight.Adornee = char
         highlight.FillTransparency = 0.5
         highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.OutlineTransparency = 0.2
         highlight.Parent = char
 
         local connection
@@ -238,16 +406,15 @@ local function CreateESP(player)
             billboard.Enabled = true
             highlight.Enabled = true
 
-            -- Цвета и Роли
             local roleText = "Innocent"
-            local color = Color3.fromRGB(0, 255, 100) -- Зеленый по умолчанию
+            local color = Color3.fromRGB(0, 255, 100)
 
             if player == Murderer then
                 roleText = "MURDERER 💀"
-                color = Color3.fromRGB(255, 0, 0) -- Красный
+                color = Color3.fromRGB(255, 0, 0)
             elseif player == Sheriff then
                 roleText = "SHERIFF ︻╦╤─"
-                color = Color3.fromRGB(0, 150, 255) -- Синий
+                color = Color3.fromRGB(0, 150, 255)
             end
 
             highlight.FillColor = color
@@ -269,13 +436,10 @@ local function CreateESP(player)
     player.CharacterAdded:Connect(CharacterAdded)
 end
 
--- Периодическое обновление ролей раз в секунду
 task.spawn(function()
     while true do
         task.wait(1)
-        if MM2_ESP_Enabled then
-            GetMM2Roles()
-        end
+        if MM2_ESP_Enabled then GetMM2Roles() end
     end
 end)
 
@@ -285,18 +449,16 @@ Connections.GunTracker = RunService.RenderStepped:Connect(function()
         if GunHighlight then GunHighlight:Destroy() GunHighlight = nil end
         return
     end
-
     local gunDrop = Workspace:FindFirstChild("GunDrop")
     if gunDrop and gunDrop:IsA("BasePart") then
         if not GunHighlight then
             GunHighlight = Instance.new("Highlight")
             GunHighlight.Adornee = gunDrop
-            GunHighlight.FillColor = Color3.fromRGB(255, 255, 0) -- Желтый для пистолета
+            GunHighlight.FillColor = Color3.fromRGB(255, 255, 0)
             GunHighlight.FillTransparency = 0.3
             GunHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
             GunHighlight.Parent = gunDrop
             
-            -- Текст над пистолетом
             local billboard = Instance.new("BillboardGui")
             billboard.Name = "Gun_ESP"
             billboard.AlwaysOnTop = true
@@ -316,69 +478,72 @@ Connections.GunTracker = RunService.RenderStepped:Connect(function()
             label.Parent = billboard
         end
     else
-        if GunHighlight then
-            GunHighlight:Destroy()
-            GunHighlight = nil
-        end
+        if GunHighlight then GunHighlight:Destroy() GunHighlight = nil end
     end
 end)
 
+-- [[ 6. Регистрация кнопок ]]
 
--- [[ 3. Логика Авто Аима (Silent Aim) ]]
-
-local function GetMurdererChar()
-    if Murderer and Murderer.Character and Murderer.Character:FindFirstChild("HumanoidRootPart") then
-        local hum = Murderer.Character:FindFirstChild("Humanoid")
-        if hum and hum.Health > 0 then
-            return Murderer.Character
-        end
-    end
-    return nil
-end
-
-Connections.AutoAim = RunService.RenderStepped:Connect(function()
-    if not AutoAim_Enabled then return end
-    
-    local myChar = LocalPlayer.Character
-    if not myChar then return end
-    
-    -- Проверяем держит ли игрок пистолет в руках
-    local equippedGun = myChar:FindFirstChild("Gun")
-    if equippedGun and equippedGun:IsA("Tool") then
-        local targetChar = GetMurdererChar()
-        if targetChar then
-            local targetPart = targetChar.HumanoidRootPart
-            -- Направляем камеру и персонажа в сторону убийцы для точного выстрела
-            local camera = Workspace.CurrentCamera
-            camera.CFrame = CFrame.new(camera.CFrame.Position, targetPart.Position)
-            
-            -- Виртуальное нажатие (выстрел), если палец зажат на экране или автоматически
-            equippedGun:Activate()
-        end
+-- Вкладка функций (Container)
+CreateToggle(Container, "MM2 ESP", false, function(state)
+    MM2_ESP_Enabled = state
+    if state then
+        GetMM2Roles()
+        for _, p in ipairs(Players:GetPlayers()) do CreateESP(p) end
     end
 end)
 
+CreateToggle(Container, "Auto Aim (Шифтлок + Клик)", false, function(state)
+    AutoAim_Enabled = state
+end)
 
--- [[ 4. Стандартные функции (Fullbright, Speed, Jump) ]]
+CreateToggle(Container, "Автофарм Монет (до 40)", false, function(state)
+    AutoFarm_Enabled = state
+end)
 
-local function UpdateFullbright()
-    if Fullbright_Enabled then
+CreateToggle(Container, "Fullbright", false, function(state)
+    Fullbright_Enabled = state
+    if state then
         Lighting.Ambient = Color3.fromRGB(255, 255, 255)
         Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
         Lighting.Brightness = 2
         Lighting.ClockTime = 14
         Lighting.FogEnd = 999999
         Lighting.GlobalShadows = false
+    else
+        Lighting.Ambient = Color3.fromRGB(128, 128, 128)
+        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+        Lighting.Brightness = 1
+        Lighting.GlobalShadows = true
     end
-end
-Lighting:GetPropertyChangedSignal("Ambient"):Connect(UpdateFullbright)
+end)
 
+CreateToggle(Container, "Infinite Jump", false, function(state)
+    InfiniteJump_Enabled = state
+end)
+
+CreateSlider("WalkSpeed", 16, 100, 16, function(value)
+    CustomSpeed = value
+end)
+
+-- Вкладка FPS (FpsContainer)
+CreateToggle(FpsContainer, "Буст 1: Снижение Пикселей", false, function(state)
+    SetPixelFPSBoost(state)
+end)
+
+CreateToggle(FpsContainer, "Буст 2: Удаление текстур", false, function(state)
+    SetNoTexturesBoost(state)
+end)
+
+CreateToggle(FpsContainer, "Буст 3: Тени и Физика", false, function(state)
+    SetPhysicsAndShadowsBoost(state)
+end)
+
+-- Бинд на бег и прыжки
 Connections.InfJump = UserInputService.JumpRequest:Connect(function()
     if InfiniteJump_Enabled and LocalPlayer.Character then
         local humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
+        if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
     end
 end)
 
@@ -391,44 +556,6 @@ Connections.SpeedLoop = RunService.RenderStepped:Connect(function()
     end
 end)
 
-
--- [[ 5. Регистрация кнопок ]]
-
-CreateToggle("MM2 ESP", false, function(state)
-    MM2_ESP_Enabled = state
-    if state then
-        GetMM2Roles()
-        for _, p in ipairs(Players:GetPlayers()) do
-            CreateESP(p)
-        end
-    end
-end)
-
-CreateToggle("Auto Aim (Murderer)", false, function(state)
-    AutoAim_Enabled = state
-end)
-
-CreateToggle("Fullbright", false, function(state)
-    Fullbright_Enabled = state
-    if state then
-        UpdateFullbright()
-    else
-        Lighting.Ambient = Color3.fromRGB(128, 128, 128)
-        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-        Lighting.Brightness = 1
-        Lighting.GlobalShadows = true
-    end
-end)
-
-CreateToggle("Infinite Jump", false, function(state)
-    InfiniteJump_Enabled = state
-end)
-
-CreateSlider("WalkSpeed", 16, 100, 16, function(value)
-    CustomSpeed = value
-end)
-
--- Очистка при выходе игроков
 Players.PlayerRemoving:Connect(function(player)
     if EspObjects[player] then
         if EspObjects[player].Billboard then EspObjects[player].Billboard:Destroy() end
@@ -438,5 +565,4 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
-print("Delta MM2 Script successfully loaded!")
-
+print("Delta Premium MM2 Loaded!")
