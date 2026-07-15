@@ -1,4 +1,4 @@
--- [[ DELTA MM2 PREMIUM ULTIMATE V3.0 (V2 REBORN) ]]
+-- [[ DELTA MM2 PREMIUM ULTIMATE V3.1 (V2 REBORN) ]]
 -- [[ Разработчики: Makanbaev Aidar & Zoya ]]
 
 local Players = game:GetService("Players")
@@ -30,7 +30,7 @@ _G.DeltaConfig = {
     TextureBoost = false,
     ButtonSize = 50,
     ButtonTransparency = 0.2,
-    MenuColor = Color3.fromRGB(255, 30, 30) -- Фирменный красный V2
+    MenuColor = Color3.fromRGB(255, 30, 30) -- Фирменный красный V2 по умолчанию
 }
 
 local OriginalMaterials = {}
@@ -101,7 +101,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -40, 1, 0)
 Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "DELTA MM2 ULTIMATE V3 (V2 UI)"
+Title.Text = "DELTA MM2 ULTIMATE V3.1"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 15
@@ -113,7 +113,7 @@ CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -32, 0, 2)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.Text = "×"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 30, 30)
+CloseBtn.TextColor3 = _G.DeltaConfig.MenuColor
 CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.TextSize = 24
 CloseBtn.Parent = Header
@@ -152,7 +152,7 @@ local function CreateTab(name, order)
     local Page = Instance.new("ScrollingFrame")
     Page.Size = UDim2.new(1, 0, 1, 0)
     Page.BackgroundTransparency = 1
-    Page.CanvasSize = UDim2.new(0, 0, 0, 400)
+    Page.CanvasSize = UDim2.new(0, 0, 0, 420)
     Page.ScrollBarThickness = 2
     Page.Visible = (order == 1)
     Page.Parent = ContainerFrame
@@ -179,9 +179,10 @@ local PageFunctions = CreateTab("Функции", 1)
 local PageUtils = CreateTab("Утилиты", 2)
 local PageExploits = CreateTab("Эксплойт", 3)
 local PageFps = CreateTab("FPS Буст", 4)
-local PageSettings = CreateTab("Настройки", 5)
-local PageCredits = CreateTab("Кредиты", 6)
--- Быстрые уведомления в стиле V2
+local PageThemes = CreateTab("Кастомизация", 5)
+local PageSettings = CreateTab("Настройки", 6)
+local PageCredits = CreateTab("Кредиты", 7)
+-- Быстрые уведомления
 local function CreateNotify(title, text, color)
     local NotifyFrame = Instance.new("Frame")
     NotifyFrame.Size = UDim2.new(0, 200, 0, 50)
@@ -233,6 +234,25 @@ local function CreateNotify(title, text, color)
     end)
 end
 
+-- Динамическое обновление тем меню
+local function UpdateMenuTheme(newColor)
+    _G.DeltaConfig.MenuColor = newColor
+    CloseBtn.TextColor3 = newColor
+    for name, tab in pairs(Tabs) do
+        if tab.Page.Visible then
+            tab.Btn.TextColor3 = newColor
+        end
+    end
+    -- Находим все включенные кнопки в контейнере и перекрашиваем их
+    for _, child in ipairs(ContainerFrame:GetDescendants()) do
+        if child:IsA("TextButton") and child.Name == "ToggleBtn" and child.BackgroundColor3 ~= Color3.fromRGB(35, 35, 35) then
+            child.BackgroundColor3 = newColor
+        end
+    end
+    local mobBtn = ScreenGui:FindFirstChild("DeltaOpenBtn")
+    if mobBtn then mobBtn.TextColor3 = newColor end
+end
+
 -- Конструктор переключателей (Toggle)
 local function CreateToggle(parent, text, configKey, callback)
     local ToggleFrame = Instance.new("Frame")
@@ -251,6 +271,7 @@ local function CreateToggle(parent, text, configKey, callback)
     Label.Parent = ToggleFrame
 
     local Button = Instance.new("TextButton")
+    Button.Name = "ToggleBtn"
     Button.Size = UDim2.new(0, 40, 0, 18)
     Button.Position = UDim2.new(1, -45, 0.5, -9)
     Button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -289,12 +310,15 @@ local function CreateToggle(parent, text, configKey, callback)
     
     updateVisuals(_G.DeltaConfig[configKey])
 end
--- ESP Игроков
+-- Улучшенный ESP с Дистанцией и Никами
 local function UpdateESP()
     for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
             local highlight = p.Character:FindFirstChild("Delta_Highlight")
+            local billG = p.Character.Head:FindFirstChild("Delta_ESP_Label")
+
             if _G.DeltaConfig.ESP then
+                -- 1. Цветовая Подсветка (Highlight)
                 if not highlight then
                     highlight = Instance.new("Highlight")
                     highlight.Name = "Delta_Highlight"
@@ -302,40 +326,70 @@ local function UpdateESP()
                     highlight.OutlineTransparency = 0.2
                     highlight.Parent = p.Character
                 end
+
                 local isMerd = p.Backpack:FindFirstChild("Knife") or p.Character:FindFirstChild("Knife")
                 local isSher = p.Backpack:FindFirstChild("Gun") or p.Character:FindFirstChild("Gun")
+                local roleColor = Color3.fromRGB(0, 255, 100) -- Невиновный
+
                 if isMerd then
-                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                    roleColor = Color3.fromRGB(255, 0, 0) -- Убийца
                 elseif isSher then
-                    highlight.FillColor = Color3.fromRGB(0, 150, 255)
-                else
-                    highlight.FillColor = Color3.fromRGB(0, 255, 100)
+                    roleColor = Color3.fromRGB(0, 150, 255) -- Шериф
                 end
+                highlight.FillColor = roleColor
+
+                -- 2. Текстовая Индикация (BillboardGui)
+                if not billG then
+                    billG = Instance.new("BillboardGui")
+                    billG.Name = "Delta_ESP_Label"
+                    billG.AlwaysOnTop = true
+                    billG.Size = UDim2.new(0, 100, 0, 30)
+                    billG.ExtentsOffset = Vector3.new(0, 2.5, 0)
+                    billG.Parent = p.Character.Head
+
+                    local lbl = Instance.new("TextLabel", billG)
+                    lbl.Name = "Label"
+                    lbl.Size = UDim2.new(1, 0, 1, 0)
+                    lbl.BackgroundTransparency = 1
+                    lbl.Font = Enum.Font.SourceSansBold
+                    lbl.TextSize = 10
+                    lbl.TextStrokeTransparency = 0
+                end
+
+                local distance = math.floor((LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("HumanoidRootPart") and (LocalPlayer.Character.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude) or 0)
+                local roleName = isMerd and "[MURDER]" or (isSher and "[SHERIFF]" or "[HERO]")
+                billG.Label.TextColor3 = roleColor
+                billG.Label.Text = p.Name .. "\n" .. roleName .. " | " .. tostring(distance) .. "s"
             else
                 if highlight then highlight:Destroy() end
+                if billG then billG:Destroy() end
             end
         end
     end
 end
 
-CreateToggle(PageFunctions, "MM2 ESP (Все роли)", "ESP", function(s)
+CreateToggle(PageFunctions, "MM2 ESP (Ники + Роли + Студы)", "ESP", function(s)
     if s then table.insert(Connections, RunService.Heartbeat:Connect(UpdateESP)) end
 end)
 
--- ESP Лежащего Пистолета
+-- РАБОЧИЙ ESP Пистолета на полу
 local function UpdateGunESP()
     local gun = Workspace:FindFirstChild("GunDrop")
     if gun and _G.DeltaConfig.GunIndicator then
+        local gunModel = gun:FindFirstChildOfClass("Model") or gun
         if not GunHighlight then
             GunHighlight = Instance.new("Highlight")
             GunHighlight.Name = "GunDrop_Highlight"
             GunHighlight.FillColor = Color3.fromRGB(255, 255, 0)
-            GunHighlight.Parent = gun
+            GunHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            GunHighlight.FillTransparency = 0.3
+            GunHighlight.Parent = gunModel
         end
     else
         if GunHighlight then GunHighlight:Destroy(); GunHighlight = nil end
     end
 end
+
 CreateToggle(PageFunctions, "ESP Пистолета на полу", "GunIndicator", function(s)
     if s then table.insert(Connections, RunService.Heartbeat:Connect(UpdateGunESP)) end
 end)
@@ -501,6 +555,8 @@ table.insert(Connections, RunService.Heartbeat:Connect(function()
         SheriffAlive = false
     end
 end))
+
+-- [[ ЭКСПЛОЙТЫ ]]
 local TargetBox = Instance.new("TextBox", PageExploits)
 TargetBox.Size = UDim2.new(1, 0, 0, 30)
 TargetBox.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -524,39 +580,60 @@ table.insert(Connections, RunService.Stepped:Connect(function()
     end
 end))
 
--- Флинг выбранного игрока
+-- Улучшенный Флинг с Автопреследованием цели до смерти
 local function RunFling()
-    local target = Players:FindFirstChild(_G.DeltaConfig.FlingTarget)
+    local targetName = _G.DeltaConfig.FlingTarget:lower()
+    local target = nil
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Name:lower():sub(1, #targetName) == targetName then
+            target = p
+            break
+        end
+    end
+
     if target and target.Character and LocalPlayer.Character then
         local myHRP = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
-        if myHRP and targetHRP then
+        local targetHum = target.Character:FindFirstChildOfClass("Humanoid")
+        
+        if myHRP and targetHRP and targetHum then
             local origCFrame = myHRP.CFrame
-            local thrust = Instance.new("BodyThrust", myHRP)
-            thrust.Force = Vector3.new(999999, 999999, 999999)
-            thrust.Location = Vector3.new(0, 1000, 0)
-
-            local startTime = tick()
-            while tick() - startTime < 1.5 and _G.DeltaConfig.Fling do
+            
+            -- Создаем мощный крутящий импульс
+            local bodyVel = Instance.new("BodyVelocity", myHRP)
+            bodyVel.MaxForce = Vector3.new(1, 1, 1) * 999999
+            bodyVel.Velocity = Vector3.new(0, 0, 0)
+            
+            local bodyAng = Instance.new("BodyAngularVelocity", myHRP)
+            bodyAng.MaxTorque = Vector3.new(1, 1, 1) * 999999
+            bodyAng.AngularVelocity = Vector3.new(0, 9999, 0) -- Вращение на бешеной скорости
+            
+            CreateNotify("ЭКСПЛУАТАЦИЯ", "Преследую цель: " .. target.Name, Color3.fromRGB(255, 150, 0))
+            
+            while _G.DeltaConfig.Fling and targetHum.Health > 0 and target.Character.Parent do
                 task.wait()
-                myHRP.Velocity = Vector3.new(9999, 9999, 9999)
-                myHRP.RotVelocity = Vector3.new(9999, 9999, 9999)
-                myHRP.CFrame = targetHRP.CFrame * CFrame.new(math.random(-1,1)/5, 0, math.random(-1,1)/5)
+                if myHRP and targetHRP then
+                    -- Намертво прилипаем к цели и бьем физикой
+                    myHRP.Velocity = Vector3.new(9999, 9999, 9999)
+                    myHRP.CFrame = targetHRP.CFrame * CFrame.new(math.random(-1, 1)/10, 0, math.random(-1, 1)/10)
+                end
             end
-            thrust:Destroy()
+            
+            bodyVel:Destroy()
+            bodyAng:Destroy()
             myHRP.Velocity = Vector3.new(0, 0, 0)
             myHRP.RotVelocity = Vector3.new(0, 0, 0)
             myHRP.CFrame = origCFrame
             _G.DeltaConfig.Fling = false
-            CreateNotify("ЭКСПЛУАТАЦИЯ", "Флинг завершен!", Color3.fromRGB(0, 255, 100))
+            CreateNotify("ЭКСПЛУАТАЦИЯ", "Цель мертва или флинг выключен!", Color3.fromRGB(0, 255, 100))
         end
     else
-        CreateNotify("ОШИБКА", "Игрок не найден!", Color3.fromRGB(255, 30, 30))
+        CreateNotify("ОШИБКА", "Цель не найдена!", Color3.fromRGB(255, 30, 30))
         _G.DeltaConfig.Fling = false
     end
 end
 
-CreateToggle(PageExploits, "Флинг цели (Fling)", "Fling", function(s)
+CreateToggle(PageExploits, "Флинг цели (Авто-Преследование)", "Fling", function(s)
     if s then task.spawn(RunFling) end
 end)
 
@@ -589,7 +666,6 @@ CreateToggle(PageExploits, "Убить всех (Только за Мардер�
         end)
     end
 end)
-
 -- Режим без текстур (FPS)
 CreateToggle(PageFps, "Режим без текстур", "TextureBoost", function(s)
     for _, obj in ipairs(Workspace:GetDescendants()) do
@@ -600,6 +676,89 @@ CreateToggle(PageFps, "Режим без текстур", "TextureBoost", functi
             if s then OriginalMaterials[obj] = obj.Material; obj.Material = Enum.Material.SmoothPlastic
             else obj.Material = OriginalMaterials[obj] or Enum.Material.Plastic end
         end
+    end
+end)
+
+-- [[ КАСТОМИЗАЦИЯ И ТЕМЫ ]]
+local Colors = {
+    {"Красный (V2)", Color3.fromRGB(255, 30, 30)},
+    {"Фиолетовый", Color3.fromRGB(130, 30, 255)},
+    {"Бирюзовый", Color3.fromRGB(0, 230, 230)},
+    {"Зеленый", Color3.fromRGB(30, 255, 30)},
+    {"Сакура", Color3.fromRGB(255, 105, 180)}
+}
+
+for _, t in ipairs(Colors) do
+    local colorBtn = Instance.new("TextButton", PageThemes)
+    colorBtn.Size = UDim2.new(1, 0, 0, 26)
+    colorBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    colorBtn.Text = "Тема: " .. t[1]
+    colorBtn.TextColor3 = t[2]
+    colorBtn.Font = Enum.Font.SourceSansBold
+    colorBtn.TextSize = 13
+    Instance.new("UICorner", colorBtn).CornerRadius = UDim.new(0, 6)
+    
+    colorBtn.MouseButton1Click:Connect(function()
+        UpdateMenuTheme(t[2])
+        CreateNotify("ТЕМА ИЗМЕНЕНА", "Цветовая гамма обновлена!", t[2])
+    end)
+end
+
+-- Изменение кнопки "D" (Размер)
+local SizeLabel = Instance.new("TextLabel", PageThemes)
+SizeLabel.Size = UDim2.new(1, 0, 0, 20)
+SizeLabel.BackgroundTransparency = 1
+SizeLabel.Text = "Управление кнопкой открытия:"
+SizeLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+SizeLabel.Font = Enum.Font.SourceSans
+SizeLabel.TextSize = 12
+
+local ChangeSizeBtn = Instance.new("TextButton", PageThemes)
+ChangeSizeBtn.Size = UDim2.new(1, 0, 0, 26)
+ChangeSizeBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+ChangeSizeBtn.Text = "Размер кнопки [50]"
+ChangeSizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ChangeSizeBtn.Font = Enum.Font.SourceSansBold
+ChangeSizeBtn.TextSize = 12
+Instance.new("UICorner", ChangeSizeBtn).CornerRadius = UDim.new(0, 6)
+
+ChangeSizeBtn.MouseButton1Click:Connect(function()
+    local mobBtn = ScreenGui:FindFirstChild("DeltaOpenBtn")
+    if mobBtn then
+        if _G.DeltaConfig.ButtonSize == 50 then
+            _G.DeltaConfig.ButtonSize = 70
+        elseif _G.DeltaConfig.ButtonSize == 70 then
+            _G.DeltaConfig.ButtonSize = 35
+        else
+            _G.DeltaConfig.ButtonSize = 50
+        end
+        ChangeSizeBtn.Text = "Размер кнопки [" .. tostring(_G.DeltaConfig.ButtonSize) .. "]"
+        mobBtn.Size = UDim2.new(0, _G.DeltaConfig.ButtonSize, 0, _G.DeltaConfig.ButtonSize)
+    end
+end)
+
+-- Изменение прозрачности "D"
+local ChangeTransBtn = Instance.new("TextButton", PageThemes)
+ChangeTransBtn.Size = UDim2.new(1, 0, 0, 26)
+ChangeTransBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+ChangeTransBtn.Text = "Прозрачность кнопки [0.2]"
+ChangeTransBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ChangeTransBtn.Font = Enum.Font.SourceSansBold
+ChangeTransBtn.TextSize = 12
+Instance.new("UICorner", ChangeTransBtn).CornerRadius = UDim.new(0, 6)
+
+ChangeTransBtn.MouseButton1Click:Connect(function()
+    local mobBtn = ScreenGui:FindFirstChild("DeltaOpenBtn")
+    if mobBtn then
+        if _G.DeltaConfig.ButtonTransparency == 0.2 then
+            _G.DeltaConfig.ButtonTransparency = 0.6
+        elseif _G.DeltaConfig.ButtonTransparency == 0.6 then
+            _G.DeltaConfig.ButtonTransparency = 0.0
+        else
+            _G.DeltaConfig.ButtonTransparency = 0.2
+        end
+        ChangeTransBtn.Text = "Прозрачность кнопки [" .. tostring(_G.DeltaConfig.ButtonTransparency) .. "]"
+        mobBtn.BackgroundTransparency = _G.DeltaConfig.ButtonTransparency
     end
 end)
 
@@ -619,7 +778,10 @@ UnloadBtn.MouseButton1Click:Connect(function()
     Lighting.Brightness = OriginalLighting.Brightness
     Lighting.GlobalShadows = OriginalLighting.GlobalShadows
     for _, p in ipairs(Players:GetPlayers()) do
-        if p.Character and p.Character:FindFirstChild("Delta_Highlight") then p.Character.Delta_Highlight:Destroy() end
+        if p.Character then
+            if p.Character:FindFirstChild("Delta_Highlight") then p.Character.Delta_Highlight:Destroy() end
+            if p.Character:FindFirstChild("Head") and p.Character.Head:FindFirstChild("Delta_ESP_Label") then p.Character.Head.Delta_ESP_Label:Destroy() end
+        end
     end
     if GunHighlight then GunHighlight:Destroy() end
     ScreenGui:Destroy()
@@ -629,7 +791,7 @@ end)
 local CreditsLabel = Instance.new("TextLabel", PageCredits)
 CreditsLabel.Size = UDim2.new(1, 0, 1, 0)
 CreditsLabel.BackgroundTransparency = 1
-CreditsLabel.Text = "Разработчики софта:\n⭐ Makanbaev Aidar & Zoya ⭐\n\nDelta Premium v3.0 (Fixed Edition)\n\nУдачной игры и жесткого фана! 🔥"
+CreditsLabel.Text = "Разработчики софта:\n⭐ Makanbaev Aidar & Zoya ⭐\n\nDelta Premium v3.1 (Extended Edition)\n\nУдачной игры и жесткого фана! 🔥"
 CreditsLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
 CreditsLabel.Font = Enum.Font.SourceSansBold
 CreditsLabel.TextSize = 13
@@ -638,12 +800,12 @@ CreditsLabel.TextWrapped = true
 -- Кнопка "D" для Мобильных устройств
 local MobileButton = Instance.new("TextButton", ScreenGui)
 MobileButton.Name = "DeltaOpenBtn"
-MobileButton.Size = UDim2.new(0, 50, 0, 50)
+MobileButton.Size = UDim2.new(0, _G.DeltaConfig.ButtonSize, 0, _G.DeltaConfig.ButtonSize)
 MobileButton.Position = UDim2.new(0, 15, 0.5, -25)
 MobileButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MobileButton.BackgroundTransparency = 0.2
+MobileButton.BackgroundTransparency = _G.DeltaConfig.ButtonTransparency
 MobileButton.Text = "D"
-MobileButton.TextColor3 = Color3.fromRGB(255, 30, 30)
+MobileButton.TextColor3 = _G.DeltaConfig.MenuColor
 MobileButton.Font = Enum.Font.SourceSansBold
 MobileButton.TextSize = 22
 MobileButton.Active = true
@@ -662,4 +824,4 @@ UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and input.KeyCode == Enum.KeyCode.RightShift then ToggleGui() end
 end)
 
-CreateNotify("Delta Premium V3.0", "Скрипт успешно перезапущен в стиле V2!", Color3.fromRGB(0, 255, 100))
+CreateNotify("Delta Premium V3.1", "Скрипт полностью обновлен!", Color3.fromRGB(0, 255, 100))
